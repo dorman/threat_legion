@@ -3,7 +3,7 @@ import { useRoute, useLocation, Link } from "wouter";
 import { Loader2, Terminal, ShieldAlert, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { useScanStream } from "@/hooks/use-scan-stream";
-import { useGetScan } from "@workspace/api-client-react";
+import { useGetScan, getGetScanQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 
 export default function ScanProgress() {
@@ -12,9 +12,8 @@ export default function ScanProgress() {
   const [, setLocation] = useLocation();
   const terminalRef = useRef<HTMLDivElement>(null);
   
-  // Also fetch initial scan data to get repo name
   const { data: scan } = useGetScan(scanId!, {
-    query: { enabled: !!scanId, retry: false }
+    query: { queryKey: getGetScanQueryKey(scanId!), enabled: !!scanId, retry: false }
   });
 
   const { logs, findings, status, result, error } = useScanStream(scanId);
@@ -26,7 +25,7 @@ export default function ScanProgress() {
     }
   }, [logs]);
 
-  // If already completed on load, maybe redirect immediately
+  // If already completed on load, redirect immediately
   useEffect(() => {
     if (scan?.status === "completed" && status === "idle") {
       setLocation(`/scans/${scanId}`);
@@ -140,7 +139,7 @@ export default function ScanProgress() {
             
             {logs.map((log, i) => {
               const isAlert = log.includes("[ALERT]");
-              const isTool = log.includes("Calling tool");
+              const isTool = log.includes("Using tool");
               
               return (
                 <div key={i} className={

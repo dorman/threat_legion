@@ -4,7 +4,8 @@ import { Plus, Github, Shield, AlertTriangle, CheckCircle2, XCircle, Search, Clo
 import { format } from "date-fns";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
-import { useGetMe, useListScans, useCreateScan } from "@workspace/api-client-react";
+import { useGetMe, useListScans, useCreateScan, getGetMeQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
+import type { CreateScanMutationError } from "@workspace/api-client-react";
 import { getScoreColor, cn } from "@/lib/utils";
 
 export default function Dashboard() {
@@ -13,11 +14,11 @@ export default function Dashboard() {
   const [errorStr, setErrorStr] = useState("");
   
   const { data: user, isLoading: isUserLoading, isError: isUserError } = useGetMe({
-    query: { retry: false }
+    query: { queryKey: getGetMeQueryKey(), retry: false }
   });
   
   const { data: scans, isLoading: isScansLoading } = useListScans({
-    query: { enabled: !!user }
+    query: { queryKey: getListScansQueryKey(), enabled: !!user }
   });
   
   const { mutate: createScan, isPending: isCreating } = useCreateScan({
@@ -25,13 +26,13 @@ export default function Dashboard() {
       onSuccess: (data) => {
         setLocation(`/scans/${data.id}/progress`);
       },
-      onError: (err: any) => {
-        setErrorStr(err.response?.data?.error || "Failed to start scan. Ensure you own this repository.");
+      onError: (err: CreateScanMutationError) => {
+        setErrorStr(err.data?.error ?? "Failed to start scan. Ensure you own or collaborate on this repository.");
       }
     }
   });
 
-  if (isUserError) {
+  if (!isUserLoading && isUserError) {
     setLocation("/");
     return null;
   }
@@ -76,7 +77,7 @@ export default function Dashboard() {
                 New Security Scan
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Enter a GitHub repository URL you own to begin an autonomous vulnerability assessment.
+                Enter a GitHub repository URL you own or collaborate on to begin an autonomous vulnerability assessment.
               </p>
               
               <form onSubmit={handleScanSubmit} className="space-y-4">

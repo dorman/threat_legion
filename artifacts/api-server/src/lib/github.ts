@@ -35,7 +35,27 @@ export async function verifyRepoOwnership(
       githubGet<{ owner: { login: string } }>(`/repos/${owner}/${repo}`),
       githubGet<{ login: string }>("/user"),
     ]);
-    return repoData.owner.login.toLowerCase() === user.login.toLowerCase();
+
+    const currentLogin = user.login.toLowerCase();
+    const repoOwnerLogin = repoData.owner.login.toLowerCase();
+
+    if (repoOwnerLogin === currentLogin) {
+      return true;
+    }
+
+    const collaboratorRes = await connectors.proxy(
+      "github",
+      `/repos/${owner}/${repo}/collaborators/${user.login}/permission`,
+      { method: "GET" }
+    );
+
+    if (!collaboratorRes.ok) {
+      return false;
+    }
+
+    const permData = await collaboratorRes.json() as { permission?: string };
+    const permission = permData.permission ?? "none";
+    return permission !== "none" && permission !== "";
   } catch {
     return false;
   }

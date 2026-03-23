@@ -1,18 +1,17 @@
 import { Link, useLocation } from "wouter";
 import { Shield, Search, Code, Zap, ArrowRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 
 export default function Home() {
   const { data: user, isLoading } = useGetMe({
-    query: { retry: false }
+    query: { queryKey: getGetMeQueryKey(), retry: false }
   });
   const [, setLocation] = useLocation();
 
-  if (user) {
-    // Redirect authenticated users to dashboard
+  if (!isLoading && user) {
     setLocation("/dashboard");
     return null;
   }

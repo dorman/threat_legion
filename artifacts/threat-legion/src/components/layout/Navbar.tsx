@@ -1,12 +1,12 @@
 import { Link } from "wouter";
 import { Shield, LogOut, Loader2, LayoutDashboard, User } from "lucide-react";
-import { useGetMe, useLogout } from "@workspace/api-client-react";
+import { useGetMe, useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function Navbar() {
   const { data: user, isLoading } = useGetMe({
-    query: { retry: false, refetchOnWindowFocus: false }
+    query: { queryKey: getGetMeQueryKey(), retry: false, refetchOnWindowFocus: false }
   });
   
   const queryClient = useQueryClient();
