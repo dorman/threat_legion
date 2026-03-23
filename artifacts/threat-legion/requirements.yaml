@@ -1,0 +1,15 @@
+packages:
+  "framer-motion": "For premium page transitions, stagger effects, and progress animations"
+  "date-fns": "For formatting scan timestamps and history dates"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to efficiently merge Tailwind CSS classes"
+
+images:
+  - path: "artifacts/threat-legion/public/images/hero-bg.png"
+    description: "Abstract cyber security hacker background, dark space with subtle glowing neon cyan and green grid lines, matrix digital rain aesthetic but minimal and professional, depth of field."
+    aspect_ratio: "16:9"
+
+notes:
+  - "The frontend relies on the generated hooks from @workspace/api-client-react."
+  - "GitHub OAuth flows redirect the browser to /api/auth/github."
+  - "SSE streams are consumed natively using EventSource in the custom useScanStream hook."

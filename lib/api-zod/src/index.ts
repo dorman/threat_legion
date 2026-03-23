@@ -1,2 +1,13 @@
 export * from "./generated/api";
-export * from "./generated/types";
+export type {
+  ErrorResponse,
+  FindingSeverity,
+  Finding,
+  HealthStatus,
+  Scan,
+  ScanStatus,
+  ScanWithFindings,
+  ScanWithFindingsStatus,
+  SuccessResponse,
+  User,
+} from "./generated/types";

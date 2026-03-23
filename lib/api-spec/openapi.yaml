@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Threat Legion - Agentic Vulnerability Scanner API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: scans
+    description: Vulnerability scan operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,156 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out the current user
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /scans:
+    get:
+      operationId: listScans
+      tags: [scans]
+      summary: List all scans for the current user
+      responses:
+        "200":
+          description: List of scans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scan"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createScan
+      tags: [scans]
+      summary: Start a new vulnerability scan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScanBody"
+      responses:
+        "201":
+          description: Scan created and queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+        "400":
+          description: Invalid repo or user not authorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /scans/{id}:
+    get:
+      operationId: getScan
+      tags: [scans]
+      summary: Get scan details and findings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scan with findings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanWithFindings"
+        "404":
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteScan
+      tags: [scans]
+      summary: Delete a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /scans/{id}/stream:
+    get:
+      operationId: streamScan
+      tags: [scans]
+      summary: Stream scan progress via SSE
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: SSE stream of scan progress events
+          content:
+            text/event-stream: {}
+        "404":
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +188,204 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        githubId:
+          type: integer
+        login:
+          type: string
+        name:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - githubId
+        - login
+        - createdAt
+
+    Scan:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        repoUrl:
+          type: string
+        repoOwner:
+          type: string
+        repoName:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        summary:
+          type: string
+          nullable: true
+        score:
+          type: integer
+          nullable: true
+        criticalCount:
+          type: integer
+        highCount:
+          type: integer
+        mediumCount:
+          type: integer
+        lowCount:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - repoUrl
+        - repoOwner
+        - repoName
+        - status
+        - criticalCount
+        - highCount
+        - mediumCount
+        - lowCount
+        - createdAt
+
+    Finding:
+      type: object
+      properties:
+        id:
+          type: integer
+        scanId:
+          type: integer
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        title:
+          type: string
+        filePath:
+          type: string
+          nullable: true
+        lineStart:
+          type: integer
+          nullable: true
+        lineEnd:
+          type: integer
+          nullable: true
+        description:
+          type: string
+        remediation:
+          type: string
+        codeSnippet:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - scanId
+        - severity
+        - title
+        - description
+        - remediation
+        - createdAt
+
+    ScanWithFindings:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        repoUrl:
+          type: string
+        repoOwner:
+          type: string
+        repoName:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        summary:
+          type: string
+          nullable: true
+        score:
+          type: integer
+          nullable: true
+        criticalCount:
+          type: integer
+        highCount:
+          type: integer
+        mediumCount:
+          type: integer
+        lowCount:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Finding"
+      required:
+        - id
+        - userId
+        - repoUrl
+        - repoOwner
+        - repoName
+        - status
+        - criticalCount
+        - highCount
+        - mediumCount
+        - lowCount
+        - createdAt
+        - findings
+
+    CreateScanBody:
+      type: object
+      properties:
+        repoUrl:
+          type: string
+          description: Full GitHub repo URL (e.g. https://github.com/owner/repo)
+      required:
+        - repoUrl
