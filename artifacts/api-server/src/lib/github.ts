@@ -8,7 +8,10 @@ export function parseRepoUrl(
   try {
     const u = new URL(url);
     if (u.hostname !== "github.com") return null;
-    const parts = u.pathname.replace(/^\//, "").replace(/\.git$/, "").split("/");
+    const parts = u.pathname
+      .replace(/^\//, "")
+      .replace(/\.git$/, "")
+      .split("/");
     if (parts.length < 2) return null;
     return { owner: parts[0]!, repo: parts[1]! };
   } catch {
@@ -27,11 +30,25 @@ async function githubGet<T>(path: string): Promise<T> {
 }
 
 /**
+ * Fetch the GitHub login (username) of the account linked to the workspace
+ * GitHub connector. This is the authoritative identity used for all GitHub API
+ * calls made through the connector.
+ */
+export async function getConnectorGithubUsername(): Promise<string | null> {
+  try {
+    const user = await githubGet<{ login: string }>("/user");
+    return user.login ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Verify that the given GitHub username is the owner of or a collaborator on
- * the specified repository. Uses the workspace-level GitHub connector for the
- * repository metadata calls; ownership is evaluated against the caller-supplied
- * `githubUsername` obtained from the authenticated user's session, not from the
- * connector's own identity.
+ * the specified repository. The `githubUsername` must originate from the
+ * connector's own identity (fetched via getConnectorGithubUsername), not from
+ * user-supplied data, ensuring the check is against the authoritative GitHub
+ * account bound to the workspace connector.
  */
 export async function verifyRepoOwnership(
   owner: string,

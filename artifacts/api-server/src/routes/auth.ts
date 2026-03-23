@@ -10,6 +10,7 @@ import {
   SESSION_TTL,
   type SessionData,
 } from "../lib/auth";
+import { getConnectorGithubUsername } from "../lib/github";
 import type { User } from "@workspace/api-zod";
 
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
@@ -50,14 +51,17 @@ function getSafeReturnTo(value: unknown): string {
   return value;
 }
 
-async function upsertUser(claims: Record<string, unknown>): Promise<User> {
+async function upsertUser(
+  claims: Record<string, unknown>,
+  githubUsername: string | null
+): Promise<User> {
   const userData = {
     id: claims.sub as string,
     email: (claims.email as string) || null,
     firstName: (claims.first_name as string) || null,
     lastName: (claims.last_name as string) || null,
     profileImageUrl: ((claims.profile_image_url || claims.picture) as string) || null,
-    githubUsername: (claims.username as string) || null,
+    githubUsername,
   };
 
   const [user] = await db
@@ -152,7 +156,8 @@ router.get("/auth/callback", async (req: Request, res: Response) => {
       return;
     }
 
-    const user = await upsertUser(claims as unknown as Record<string, unknown>);
+    const githubUsername = await getConnectorGithubUsername();
+    const user = await upsertUser(claims as unknown as Record<string, unknown>, githubUsername);
 
     const now = Math.floor(Date.now() / 1000);
     const sessionData: SessionData = {
