@@ -10,12 +10,31 @@ const router: IRouter = Router();
 
 const activeScanIds = new Set<number>();
 
+/**
+ * The workspace GitHub connector is tied to a single GitHub account belonging
+ * to the Replit workspace owner. We enforce that only that owner can initiate
+ * scans, ensuring the GitHub identity used for ownership verification matches
+ * the authenticated user making the request.
+ */
+const WORKSPACE_OWNER_ID = process.env["REPL_OWNER_ID"] ?? "";
+
 function requireAuth(req: Request, res: Response): User | null {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Not authenticated" });
     return null;
   }
   return req.user as User;
+}
+
+function requireWorkspaceOwner(user: User, res: Response): boolean {
+  if (!WORKSPACE_OWNER_ID || user.id !== WORKSPACE_OWNER_ID) {
+    res.status(403).json({
+      error:
+        "Scan access is restricted to the workspace owner. The GitHub connector used for repository verification is tied to a single account.",
+    });
+    return false;
+  }
+  return true;
 }
 
 function getParamId(req: Request): number | null {
@@ -46,6 +65,8 @@ router.get("/scans", async (req: Request, res: Response) => {
 router.post("/scans", async (req: Request, res: Response): Promise<void> => {
   const user = requireAuth(req, res);
   if (!user) return;
+
+  if (!requireWorkspaceOwner(user, res)) return;
 
   const { repoUrl } = req.body as { repoUrl?: string };
 
