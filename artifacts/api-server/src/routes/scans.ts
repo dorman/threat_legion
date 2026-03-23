@@ -62,11 +62,23 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const isAuthorized = await verifyRepoOwnership(parsed.owner, parsed.repo);
+  if (!user.githubUsername) {
+    res.status(403).json({
+      error:
+        "GitHub account not linked. Please sign in via a Replit account that has GitHub connected.",
+    });
+    return;
+  }
+
+  const isAuthorized = await verifyRepoOwnership(
+    parsed.owner,
+    parsed.repo,
+    user.githubUsername
+  );
   if (!isAuthorized) {
     res.status(403).json({
       error:
-        "You can only scan repositories you own or collaborate on. Please verify your access to this repository.",
+        "You can only scan repositories you own or collaborate on. Ensure your GitHub account has access to this repository.",
     });
     return;
   }

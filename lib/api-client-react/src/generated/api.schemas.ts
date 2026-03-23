@@ -23,6 +23,7 @@ export interface User {
   firstName?: string | null;
   lastName?: string | null;
   profileImageUrl?: string | null;
+  githubUsername?: string | null;
 }
 
 export type ScanStatus = (typeof ScanStatus)[keyof typeof ScanStatus];

@@ -26,26 +26,30 @@ async function githubGet<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/**
+ * Verify that the given GitHub username is the owner of or a collaborator on
+ * the specified repository. Uses the workspace-level GitHub connector for the
+ * repository metadata calls; ownership is evaluated against the caller-supplied
+ * `githubUsername` obtained from the authenticated user's session, not from the
+ * connector's own identity.
+ */
 export async function verifyRepoOwnership(
   owner: string,
-  repo: string
+  repo: string,
+  githubUsername: string
 ): Promise<boolean> {
   try {
-    const [repoData, user] = await Promise.all([
-      githubGet<{ owner: { login: string } }>(`/repos/${owner}/${repo}`),
-      githubGet<{ login: string }>("/user"),
-    ]);
+    const repoData = await githubGet<{ owner: { login: string } }>(
+      `/repos/${owner}/${repo}`
+    );
 
-    const currentLogin = user.login.toLowerCase();
-    const repoOwnerLogin = repoData.owner.login.toLowerCase();
-
-    if (repoOwnerLogin === currentLogin) {
+    if (repoData.owner.login.toLowerCase() === githubUsername.toLowerCase()) {
       return true;
     }
 
     const collaboratorRes = await connectors.proxy(
       "github",
-      `/repos/${owner}/${repo}/collaborators/${user.login}/permission`,
+      `/repos/${owner}/${repo}/collaborators/${githubUsername}/permission`,
       { method: "GET" }
     );
 
@@ -53,7 +57,9 @@ export async function verifyRepoOwnership(
       return false;
     }
 
-    const permData = await collaboratorRes.json() as { permission?: string };
+    const permData = (await collaboratorRes.json()) as {
+      permission?: string;
+    };
     const permission = permData.permission ?? "none";
     return permission !== "none" && permission !== "";
   } catch {
@@ -89,7 +95,9 @@ export async function getFileContent(
       `/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`
     );
     if (data.content && data.encoding === "base64") {
-      return Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf-8");
+      return Buffer.from(data.content.replace(/\n/g, ""), "base64").toString(
+        "utf-8"
+      );
     }
     return null;
   } catch {

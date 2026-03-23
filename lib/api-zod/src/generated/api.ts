@@ -24,6 +24,7 @@ export const GetMeResponse = zod.object({
   firstName: zod.string().nullish(),
   lastName: zod.string().nullish(),
   profileImageUrl: zod.string().nullish(),
+  githubUsername: zod.string().nullish(),
 });
 
 /**

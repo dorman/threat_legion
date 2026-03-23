@@ -221,6 +221,9 @@ components:
         profileImageUrl:
           type: string
           nullable: true
+        githubUsername:
+          type: string
+          nullable: true
       required:
         - id
 

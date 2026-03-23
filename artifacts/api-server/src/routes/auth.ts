@@ -57,6 +57,7 @@ async function upsertUser(claims: Record<string, unknown>): Promise<User> {
     firstName: (claims.first_name as string) || null,
     lastName: (claims.last_name as string) || null,
     profileImageUrl: ((claims.profile_image_url || claims.picture) as string) || null,
+    githubUsername: (claims.username as string) || null,
   };
 
   const [user] = await db
@@ -76,6 +77,7 @@ async function upsertUser(claims: Record<string, unknown>): Promise<User> {
     firstName: user.firstName ?? null,
     lastName: user.lastName ?? null,
     profileImageUrl: user.profileImageUrl ?? null,
+    githubUsername: user.githubUsername ?? null,
   };
 }
 
