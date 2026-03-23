@@ -361,6 +361,7 @@ Be thorough but efficient - focus on files likely to contain security issues.`,
     ];
 
     let scanDone = false;
+    let finishScanCalled = false;
     let finalScore = 100;
     let finalSummary = "";
     let iterations = 0;
@@ -425,6 +426,7 @@ Be thorough but efficient - focus on files likely to contain security issues.`,
 
         if (done) {
           scanDone = true;
+          finishScanCalled = true;
           if (score !== undefined) finalScore = score;
           if (summary !== undefined) finalSummary = summary;
         }
@@ -445,7 +447,7 @@ Be thorough but efficient - focus on files likely to contain security issues.`,
     const mediumCount = findings.filter((f) => f.severity === "medium").length;
     const lowCount = findings.filter((f) => f.severity === "low").length;
 
-    if (!finalScore) {
+    if (!finishScanCalled) {
       finalScore = Math.max(
         0,
         100 -
@@ -454,6 +456,8 @@ Be thorough but efficient - focus on files likely to contain security issues.`,
           mediumCount * 5 -
           lowCount * 2
       );
+      finalSummary =
+        finalSummary || `Found ${findings.length} security issues`;
     }
 
     await db
