@@ -1,11 +1,11 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, varchar, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
 
 export const scansTable = pgTable("scans", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id")
+  userId: varchar("user_id")
     .notNull()
     .references(() => usersTable.id, { onDelete: "cascade" }),
   repoUrl: text("repo_url").notNull(),

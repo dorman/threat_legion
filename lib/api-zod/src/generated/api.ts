@@ -19,12 +19,11 @@ export const HealthCheckResponse = zod.object({
  * @summary Get current authenticated user
  */
 export const GetMeResponse = zod.object({
-  id: zod.number(),
-  githubId: zod.number(),
-  login: zod.string(),
-  name: zod.string().nullish(),
-  avatarUrl: zod.string().nullish(),
-  createdAt: zod.date(),
+  id: zod.string(),
+  email: zod.string().nullish(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
+  profileImageUrl: zod.string().nullish(),
 });
 
 /**
@@ -39,7 +38,7 @@ export const LogoutResponse = zod.object({
  */
 export const ListScansResponseItem = zod.object({
   id: zod.number(),
-  userId: zod.number(),
+  userId: zod.string(),
   repoUrl: zod.string(),
   repoOwner: zod.string(),
   repoName: zod.string(),
@@ -74,7 +73,7 @@ export const GetScanParams = zod.object({
 
 export const GetScanResponse = zod.object({
   id: zod.number(),
-  userId: zod.number(),
+  userId: zod.string(),
   repoUrl: zod.string(),
   repoOwner: zod.string(),
   repoName: zod.string(),

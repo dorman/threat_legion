@@ -7,10 +7,9 @@
  */
 
 export interface User {
-  id: number;
-  githubId: number;
-  login: string;
-  name?: string | null;
-  avatarUrl?: string | null;
-  createdAt: Date;
+  id: string;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
 }

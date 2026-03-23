@@ -3,7 +3,7 @@ import { db, scansTable, findingsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { parseRepoUrl, verifyRepoOwnership } from "../lib/github";
 import { runScan, type ScanEvent } from "../lib/scan-engine";
-import { type User } from "@workspace/db";
+import type { User } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -59,7 +59,7 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const isOwner = await verifyRepoOwnership(user.accessToken, parsed.owner, parsed.repo);
+  const isOwner = await verifyRepoOwnership(parsed.owner, parsed.repo);
   if (!isOwner) {
     res.status(403).json({
       error:
@@ -79,11 +79,9 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
     })
     .returning();
 
-  runScan(scan.id, parsed.owner, parsed.repo, user.accessToken, () => {}).catch(
-    (err) => {
-      req.log.error({ err, scanId: scan.id }, "Background scan failed");
-    }
-  );
+  runScan(scan.id, parsed.owner, parsed.repo, () => {}).catch((err) => {
+    req.log.error({ err, scanId: scan.id }, "Background scan failed");
+  });
 
   res.status(201).json(scan);
 });
@@ -176,13 +174,7 @@ router.get("/scans/:id/stream", async (req: Request, res: Response): Promise<voi
   sendEvent({ type: "log", message: `Starting scan for ${scan.repoOwner}/${scan.repoName}...` });
 
   try {
-    await runScan(
-      scan.id,
-      scan.repoOwner,
-      scan.repoName,
-      user.accessToken,
-      sendEvent
-    );
+    await runScan(scan.id, scan.repoOwner, scan.repoName, sendEvent);
   } catch (err) {
     sendEvent({ type: "error", message: `Scan failed: ${(err as Error).message}` });
   }

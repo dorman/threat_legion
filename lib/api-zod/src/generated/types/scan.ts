@@ -9,7 +9,7 @@ import type { ScanStatus } from "./scanStatus";
 
 export interface Scan {
   id: number;
-  userId: number;
+  userId: string;
   repoUrl: string;
   repoOwner: string;
   repoName: string;

@@ -1,22 +1,15 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
+import { sql } from "drizzle-orm";
+import { pgTable, varchar, timestamp } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
-  id: serial("id").primaryKey(),
-  githubId: integer("github_id").notNull().unique(),
-  login: text("login").notNull(),
-  name: text("name"),
-  avatarUrl: text("avatar_url"),
-  accessToken: text("access_token").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
-export const insertUserSchema = createInsertSchema(usersTable).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof usersTable.$inferInsert;
 export type User = typeof usersTable.$inferSelect;

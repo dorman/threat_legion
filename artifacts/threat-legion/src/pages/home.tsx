@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Shield, Github, Search, Code, Zap, ArrowRight, Activity } from "lucide-react";
+import { Shield, Search, Code, Zap, ArrowRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGetMe } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
@@ -63,9 +63,8 @@ export default function Home() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Button asChild size="lg" className="h-14 px-8 text-lg w-full sm:w-auto font-semibold">
-                <a href="/api/auth/github">
-                  <Github className="mr-2 h-5 w-5" />
-                  Connect GitHub to Start
+                <a href="/api/auth/login">
+                  Sign in with Replit to Start
                 </a>
               </Button>
               <Button asChild variant="glass" size="lg" className="h-14 px-8 text-lg w-full sm:w-auto">

@@ -52,15 +52,29 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 ### `artifacts/api-server` (`@workspace/api-server`)
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+Express 5 API server for Threat Legion (Agentic Vulnerability Scanner). Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
+- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, authMiddleware, routes at `/api`
+- Auth: Replit Auth (OIDC via `openid-client`) — `src/lib/auth.ts`, `src/middlewares/authMiddleware.ts`, `src/routes/auth.ts`
+  - Login: `GET /api/auth/login` → redirects to Replit OIDC
+  - Callback: `GET /api/auth/callback` → creates session cookie (`sid`)
+  - Logout: `POST /api/auth/logout`
+  - Me: `GET /api/auth/me` → returns current user or 401
+- Scans: `src/routes/scans.ts` — CRUD scans + `GET /api/scans/:id/stream` (SSE)
+- Scan engine: `src/lib/scan-engine.ts` — multi-agent Claude AI loop using Anthropic AI integration
+- GitHub API: `src/lib/github.ts` — uses Replit GitHub Connector proxy (`@replit/connectors-sdk`)
+- Depends on: `@workspace/db`, `@workspace/api-zod`, `@workspace/integrations-anthropic-ai`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+- `pnpm --filter @workspace/api-server run build` — production esbuild bundle
+
+### `artifacts/threat-legion` (`@workspace/threat-legion`)
+
+React + Vite frontend for Threat Legion. Dark cybersecurity aesthetic with green/cyan accents.
+
+- Pages: Home (landing), Dashboard (scan list + new scan), ScanProgress (live SSE stream), ScanResults
+- Auth: redirects to `/api/auth/login` for Replit OIDC login
+- Uses React Query hooks from `@workspace/api-client-react` (generated from OpenAPI spec)
 
 ### `lib/db` (`@workspace/db`)
 

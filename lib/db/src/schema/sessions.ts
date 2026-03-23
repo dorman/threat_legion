@@ -1,7 +1,11 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
 
-export const sessionsTable = pgTable("sessions", {
-  sid: text("sid").primaryKey(),
-  sess: text("sess").notNull(),
-  expire: timestamp("expire").notNull(),
-});
+export const sessionsTable = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);

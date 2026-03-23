@@ -1,7 +1,7 @@
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { db, scansTable, findingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { createOctokit, getRepoFileTree, getFileContent } from "./github";
+import { getRepoFileTree, getFileContent } from "./github";
 import { logger } from "./logger";
 
 export type ScanEvent =
@@ -131,10 +131,8 @@ export async function runScan(
   scanId: number,
   owner: string,
   repo: string,
-  accessToken: string,
   onEvent: (event: ScanEvent) => void
 ): Promise<void> {
-  const octokit = createOctokit(accessToken);
   const findings: FindingData[] = [];
 
   try {
@@ -145,7 +143,7 @@ export async function runScan(
 
     onEvent({ type: "log", message: `🔍 Starting security scan for ${owner}/${repo}...` });
 
-    const files = await getRepoFileTree(octokit, owner, repo, 150);
+    const files = await getRepoFileTree(owner, repo, 150);
     onEvent({ type: "log", message: `📁 Found ${files.length} files to analyze` });
 
     const fileList = files.join("\n");
@@ -214,7 +212,7 @@ Be thorough but efficient - focus on files likely to contain security issues.`,
         let result = "";
 
         if (toolName === "read_file") {
-          const content = await getFileContent(octokit, owner, repo, toolInput.path || "");
+          const content = await getFileContent(owner, repo, toolInput.path || "");
           result = content || "File not found or could not be read";
           if (content) {
             onEvent({ type: "log", message: `📄 Read file: ${toolInput.path}` });
@@ -233,7 +231,7 @@ Be thorough but efficient - focus on files likely to contain security issues.`,
 
             for (const filePath of files.slice(0, 50)) {
               if (searchResults.length >= maxResults) break;
-              const content = await getFileContent(octokit, owner, repo, filePath);
+              const content = await getFileContent(owner, repo, filePath);
               if (!content) continue;
               const lines = content.split("\n");
               lines.forEach((line, idx) => {

@@ -208,25 +208,21 @@ components:
       type: object
       properties:
         id:
-          type: integer
-        githubId:
-          type: integer
-        login:
           type: string
-        name:
+        email:
           type: string
           nullable: true
-        avatarUrl:
+        firstName:
           type: string
           nullable: true
-        createdAt:
+        lastName:
           type: string
-          format: date-time
+          nullable: true
+        profileImageUrl:
+          type: string
+          nullable: true
       required:
         - id
-        - githubId
-        - login
-        - createdAt
 
     Scan:
       type: object
@@ -234,7 +230,7 @@ components:
         id:
           type: integer
         userId:
-          type: integer
+          type: string
         repoUrl:
           type: string
         repoOwner:
@@ -328,7 +324,7 @@ components:
         id:
           type: integer
         userId:
-          type: integer
+          type: string
         repoUrl:
           type: string
         repoOwner:

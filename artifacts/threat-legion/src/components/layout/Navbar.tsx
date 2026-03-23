@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Shield, Github, LogOut, Loader2, LayoutDashboard } from "lucide-react";
+import { Shield, LogOut, Loader2, LayoutDashboard, User } from "lucide-react";
 import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,12 @@ export function Navbar() {
       }
     }
   });
+
+  const displayName = user ? (
+    user.firstName
+      ? `${user.firstName}${user.lastName ? " " + user.lastName : ""}`
+      : user.email ?? "User"
+  ) : null;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
@@ -43,12 +49,12 @@ export function Navbar() {
                 </Link>
                 <div className="h-4 w-px bg-border hidden sm:block" />
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium hidden sm:block">{user.login}</span>
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.login} className="h-8 w-8 rounded-full border border-border" />
+                  <span className="text-sm font-medium hidden sm:block">{displayName}</span>
+                  {user.profileImageUrl ? (
+                    <img src={user.profileImageUrl} alt={displayName ?? "User"} className="h-8 w-8 rounded-full border border-border" />
                   ) : (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground font-bold">
-                      {user.login.charAt(0).toUpperCase()}
+                      <User className="h-4 w-4" />
                     </div>
                   )}
                   <Button 
@@ -65,9 +71,8 @@ export function Navbar() {
               </div>
             ) : (
               <Button asChild variant="default" className="font-semibold">
-                <a href="/api/auth/github">
-                  <Github className="mr-2 h-4 w-4" />
-                  Sign in with GitHub
+                <a href="/api/auth/login">
+                  Sign in with Replit
                 </a>
               </Button>
             )}

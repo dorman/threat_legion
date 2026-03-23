@@ -10,7 +10,7 @@ import type { ScanWithFindingsStatus } from "./scanWithFindingsStatus";
 
 export interface ScanWithFindings {
   id: number;
-  userId: number;
+  userId: string;
   repoUrl: string;
   repoOwner: string;
   repoName: string;

@@ -18,12 +18,11 @@ export interface SuccessResponse {
 }
 
 export interface User {
-  id: number;
-  githubId: number;
-  login: string;
-  name?: string | null;
-  avatarUrl?: string | null;
-  createdAt: string;
+  id: string;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  profileImageUrl?: string | null;
 }
 
 export type ScanStatus = (typeof ScanStatus)[keyof typeof ScanStatus];
@@ -37,7 +36,7 @@ export const ScanStatus = {
 
 export interface Scan {
   id: number;
-  userId: number;
+  userId: string;
   repoUrl: string;
   repoOwner: string;
   repoName: string;
@@ -89,7 +88,7 @@ export const ScanWithFindingsStatus = {
 
 export interface ScanWithFindings {
   id: number;
-  userId: number;
+  userId: string;
   repoUrl: string;
   repoOwner: string;
   repoName: string;
