@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Github, Shield, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRight, Loader2, Shield } from "lucide-react";
+import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
 import { format } from "date-fns";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,7 @@ export default function Dashboard() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10 blur-2xl" />
               
               <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" />
+                <NinjaHoodIcon className="w-5 h-5 text-primary" />
                 New Security Scan
               </h2>
               <p className="text-sm text-muted-foreground mb-6">

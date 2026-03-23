@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Shield, Search, Code, Zap, ArrowRight, Activity } from "lucide-react";
+import { Search, Code, Zap, ArrowRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { motion } from "framer-motion";

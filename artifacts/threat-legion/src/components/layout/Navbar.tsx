@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { Shield, LogOut, Loader2, LayoutDashboard, User } from "lucide-react";
+import { LogOut, Loader2, LayoutDashboard, User } from "lucide-react";
+import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
 import { useGetMe, useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,7 +32,7 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
             <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-              <Shield className="h-5 w-5" />
+              <NinjaHoodIcon className="h-5 w-5" />
             </div>
             <span className="font-display text-lg font-bold tracking-tight text-glow">
               Threat<span className="text-primary">Legion</span>
