@@ -1,9 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, scansTable, findingsTable } from "@workspace/db";
+import { db, scansTable, findingsTable, usersTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
-import { parseRepoUrl, verifyRepoOwnership } from "../lib/github";
+import { parseRepoUrl, verifyRepoOwnership, getConnectorGithubUsername } from "../lib/github";
 import { runScan, type ScanEvent } from "../lib/scan-engine";
 import { publishScanEvent, subscribeScan } from "../lib/scan-bus";
+import { getSessionId, getSession, updateSession } from "../lib/auth";
 import type { User } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -83,10 +84,36 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  if (!user.githubUsername) {
+  let githubUsername = user.githubUsername;
+
+  const liveUsername = await getConnectorGithubUsername();
+  if (liveUsername) {
+    githubUsername = liveUsername;
+    if (liveUsername !== user.githubUsername) {
+      try {
+        await db
+          .update(usersTable)
+          .set({ githubUsername: liveUsername, updatedAt: new Date() })
+          .where(eq(usersTable.id, user.id));
+
+        const sid = getSessionId(req);
+        if (sid) {
+          const session = await getSession(sid);
+          if (session) {
+            session.user = { ...session.user, githubUsername: liveUsername };
+            await updateSession(sid, session);
+          }
+        }
+      } catch (err) {
+        req.log.warn({ err }, "Failed to persist refreshed githubUsername");
+      }
+    }
+  }
+
+  if (!githubUsername) {
     res.status(403).json({
       error:
-        "GitHub account not linked. Please sign in via a Replit account that has GitHub connected.",
+        "GitHub is not connected. Please connect your GitHub account to Replit and try again.",
     });
     return;
   }
@@ -94,7 +121,7 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
   const isAuthorized = await verifyRepoOwnership(
     parsed.owner,
     parsed.repo,
-    user.githubUsername
+    githubUsername
   );
   if (!isAuthorized) {
     res.status(403).json({
