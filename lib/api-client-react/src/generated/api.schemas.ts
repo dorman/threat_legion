@@ -17,6 +17,13 @@ export interface SuccessResponse {
   message: string;
 }
 
+export type UserTier = (typeof UserTier)[keyof typeof UserTier];
+
+export const UserTier = {
+  free: "free",
+  paid: "paid",
+} as const;
+
 export interface User {
   id: string;
   email?: string | null;
@@ -24,6 +31,20 @@ export interface User {
   lastName?: string | null;
   profileImageUrl?: string | null;
   githubUsername?: string | null;
+  tier: UserTier;
+}
+
+export type SubscriptionTier =
+  (typeof SubscriptionTier)[keyof typeof SubscriptionTier];
+
+export const SubscriptionTier = {
+  free: "free",
+  paid: "paid",
+} as const;
+
+export interface Subscription {
+  tier: SubscriptionTier;
+  price: number;
 }
 
 export type ScanStatus = (typeof ScanStatus)[keyof typeof ScanStatus];

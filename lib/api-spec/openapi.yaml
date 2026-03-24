@@ -14,6 +14,8 @@ tags:
     description: Authentication operations
   - name: scans
     description: Vulnerability scan operations
+  - name: subscription
+    description: Subscription and tier management
 paths:
   /healthz:
     get:
@@ -178,6 +180,63 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /subscription:
+    get:
+      operationId: getSubscription
+      tags: [subscription]
+      summary: Get current user subscription info
+      responses:
+        "200":
+          description: Subscription info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /subscription/upgrade:
+    post:
+      operationId: upgradeTier
+      tags: [subscription]
+      summary: Upgrade to paid tier
+      responses:
+        "200":
+          description: Upgrade successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /subscription/downgrade:
+    post:
+      operationId: downgradeTier
+      tags: [subscription]
+      summary: Downgrade to free tier
+      responses:
+        "200":
+          description: Downgrade successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -224,8 +283,24 @@ components:
         githubUsername:
           type: string
           nullable: true
+        tier:
+          type: string
+          enum: [free, paid]
       required:
         - id
+        - tier
+
+    Subscription:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [free, paid]
+        price:
+          type: integer
+      required:
+        - tier
+        - price
 
     Scan:
       type: object

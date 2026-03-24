@@ -182,7 +182,25 @@ router.get("/scans/:id", async (req: Request, res: Response): Promise<void> => {
     .where(eq(findingsTable.scanId, scanId))
     .orderBy(findingsTable.severity);
 
-  res.json({ ...scan, findings });
+  const userTier = (user as User & { tier?: string }).tier ?? "free";
+  const filteredFindings = findings.map((f) => {
+    if (userTier === "paid") return f;
+    if (f.severity === "critical" || f.severity === "high") {
+      return {
+        ...f,
+        description: "Upgrade to the Pro plan to view this finding.",
+        remediation: "Upgrade to the Pro plan to view remediation details.",
+        codeSnippet: null,
+        filePath: null,
+        lineStart: null,
+        lineEnd: null,
+        locked: true,
+      };
+    }
+    return f;
+  });
+
+  res.json({ ...scan, findings: filteredFindings });
 });
 
 router.delete("/scans/:id", async (req: Request, res: Response): Promise<void> => {

@@ -1,8 +1,8 @@
 import type { SVGProps } from "react";
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, ShieldCheck, ShieldAlert, Shield, FileText, Code2, AlertTriangle, AlertCircle, Info, ChevronRight } from "lucide-react";
+import { ArrowLeft, ShieldCheck, ShieldAlert, Shield, FileText, Code2, AlertTriangle, AlertCircle, Info, ChevronRight, Lock, Crown } from "lucide-react";
 import { format } from "date-fns";
-import { useGetScan, getGetScanQueryKey, type Finding } from "@workspace/api-client-react";
+import { useGetScan, getGetScanQueryKey, useGetMe, getGetMeQueryKey, type Finding } from "@workspace/api-client-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { getScoreColor, getSeverityColor, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,10 @@ export default function ScanResults() {
   const { data: scan, isLoading, isError } = useGetScan(scanId!, {
     query: { queryKey: getGetScanQueryKey(scanId!), enabled: !!scanId, retry: false }
   });
+  const { data: user } = useGetMe({
+    query: { queryKey: getGetMeQueryKey(), retry: false }
+  });
+  const isFree = !user?.tier || user.tier === "free";
 
   if (isLoading) {
     return (
@@ -193,6 +197,30 @@ export default function ScanResults() {
               </span>
             </h2>
             
+            {isFree && (scan.criticalCount > 0 || scan.highCount > 0) && (
+              <div className="bg-gradient-to-r from-orange-500/10 via-red-500/10 to-orange-500/10 border border-orange-500/20 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center shrink-0">
+                    <Lock className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">
+                      {scan.criticalCount + scan.highCount} finding{scan.criticalCount + scan.highCount !== 1 ? "s" : ""} locked
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Upgrade to Pro to view high & critical vulnerability details
+                    </p>
+                  </div>
+                </div>
+                <Button asChild size="sm" className="shrink-0 font-semibold">
+                  <Link href="/pricing">
+                    <Crown className="w-4 h-4 mr-1.5" />
+                    Upgrade to Pro
+                  </Link>
+                </Button>
+              </div>
+            )}
+
             {sortedFindings.length === 0 ? (
               <div className="bg-card border border-dashed border-white/10 rounded-2xl p-12 text-center flex flex-col items-center">
                 <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4">
@@ -206,7 +234,7 @@ export default function ScanResults() {
             ) : (
               <div className="space-y-6">
                 {sortedFindings.map((finding) => (
-                  <FindingCard key={finding.id} finding={finding} />
+                  <FindingCard key={finding.id} finding={finding as Finding & { locked?: boolean }} isFree={isFree} />
                 ))}
               </div>
             )}
@@ -218,7 +246,42 @@ export default function ScanResults() {
   );
 }
 
-function FindingCard({ finding }: { finding: Finding }) {
+function FindingCard({ finding, isFree }: { finding: Finding & { locked?: boolean }; isFree: boolean }) {
+  const isLocked = isFree && (finding.severity === "critical" || finding.severity === "high");
+
+  if (isLocked) {
+    return (
+      <div className="bg-card rounded-xl border border-white/5 overflow-hidden shadow-lg relative">
+        <div className="p-5 md:p-6">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h3 className="text-xl font-semibold leading-tight flex items-center gap-2">
+              <Lock className="w-4 h-4 text-muted-foreground shrink-0" />
+              {finding.title}
+            </h3>
+            <span className={cn(
+              "shrink-0 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider border",
+              getSeverityColor(finding.severity)
+            )}>
+              {finding.severity}
+            </span>
+          </div>
+          <div className="bg-secondary/30 border border-white/5 rounded-lg p-6 text-center">
+            <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground mb-4">
+              Finding details, remediation steps, and code snippets are available on the Pro plan.
+            </p>
+            <Button asChild size="sm" className="font-semibold">
+              <Link href="/pricing">
+                <Crown className="w-4 h-4 mr-1.5" />
+                Upgrade to Pro — $10/mo
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-card rounded-xl border border-white/5 overflow-hidden shadow-lg group hover:border-white/10 transition-colors">
       <div className="p-5 md:p-6 border-b border-white/5">

@@ -82,6 +82,7 @@ async function upsertUser(
     lastName: user.lastName ?? null,
     profileImageUrl: user.profileImageUrl ?? null,
     githubUsername: user.githubUsername ?? null,
+    tier: (user.tier as "free" | "paid") ?? "free",
   };
 }
 

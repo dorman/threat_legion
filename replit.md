@@ -61,7 +61,8 @@ Express 5 API server for Threat Legion (Agentic Vulnerability Scanner). Routes l
   - Callback: `GET /api/auth/callback` → creates session cookie (`sid`)
   - Logout: `POST /api/auth/logout`
   - Me: `GET /api/auth/me` → returns current user or 401
-- Scans: `src/routes/scans.ts` — CRUD scans + `GET /api/scans/:id/stream` (SSE)
+- Scans: `src/routes/scans.ts` — CRUD scans + `GET /api/scans/:id/stream` (SSE). Free tier users get redacted high/critical findings.
+- Subscription: `src/routes/subscription.ts` — GET/POST tier management (free/paid)
 - Scan engine: `src/lib/scan-engine.ts` — multi-agent Claude AI loop using Anthropic AI integration
 - GitHub API: `src/lib/github.ts` — uses Replit GitHub Connector proxy (`@replit/connectors-sdk`)
 - Depends on: `@workspace/db`, `@workspace/api-zod`, `@workspace/integrations-anthropic-ai`
@@ -72,9 +73,10 @@ Express 5 API server for Threat Legion (Agentic Vulnerability Scanner). Routes l
 
 React + Vite frontend for Threat Legion. Dark cybersecurity aesthetic with green/cyan accents.
 
-- Pages: Home (landing), Dashboard (scan list + new scan), ScanProgress (live SSE stream), ScanResults
+- Pages: Home (landing), Pricing (tier comparison), Dashboard (scan list + new scan), ScanProgress (live SSE stream), ScanResults
 - Auth: redirects to `/api/auth/login` for Replit OIDC login
 - Uses React Query hooks from `@workspace/api-client-react` (generated from OpenAPI spec)
+- Pricing tiers: Free (low/medium findings) and Pro ($10/mo, all severity levels including high/critical)
 
 ### `lib/db` (`@workspace/db`)
 

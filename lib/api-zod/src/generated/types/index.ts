@@ -15,5 +15,8 @@ export * from "./scan";
 export * from "./scanStatus";
 export * from "./scanWithFindings";
 export * from "./scanWithFindingsStatus";
+export * from "./subscription";
+export * from "./subscriptionTier";
 export * from "./successResponse";
 export * from "./user";
+export * from "./userTier";

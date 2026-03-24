@@ -25,6 +25,7 @@ export const GetMeResponse = zod.object({
   lastName: zod.string().nullish(),
   profileImageUrl: zod.string().nullish(),
   githubUsername: zod.string().nullish(),
+  tier: zod.enum(["free", "paid"]),
 });
 
 /**
@@ -117,4 +118,28 @@ export const DeleteScanParams = zod.object({
  */
 export const StreamScanParams = zod.object({
   id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get current user subscription info
+ */
+export const GetSubscriptionResponse = zod.object({
+  tier: zod.enum(["free", "paid"]),
+  price: zod.number(),
+});
+
+/**
+ * @summary Upgrade to paid tier
+ */
+export const UpgradeTierResponse = zod.object({
+  tier: zod.enum(["free", "paid"]),
+  price: zod.number(),
+});
+
+/**
+ * @summary Downgrade to free tier
+ */
+export const DowngradeTierResponse = zod.object({
+  tier: zod.enum(["free", "paid"]),
+  price: zod.number(),
 });

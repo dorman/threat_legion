@@ -5,6 +5,7 @@
  * Threat Legion - Agentic Vulnerability Scanner API
  * OpenAPI spec version: 0.1.0
  */
+import type { UserTier } from "./userTier";
 
 export interface User {
   id: string;
@@ -13,4 +14,5 @@ export interface User {
   lastName?: string | null;
   profileImageUrl?: string | null;
   githubUsername?: string | null;
+  tier: UserTier;
 }

@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { LogOut, Loader2, LayoutDashboard, User } from "lucide-react";
+import { LogOut, Loader2, LayoutDashboard, User, Crown } from "lucide-react";
 import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
 import { useGetMe, useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,10 @@ export function Navbar() {
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
                 </Link>
+                <Link href="/pricing" className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Crown className="h-4 w-4" />
+                  Pricing
+                </Link>
                 <div className="h-4 w-px bg-border hidden sm:block" />
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium hidden sm:block">{displayName}</span>
@@ -71,11 +75,16 @@ export function Navbar() {
                 </div>
               </div>
             ) : (
-              <Button asChild variant="default" className="font-semibold">
-                <a href="/api/auth/login">
-                  Sign in with Replit
-                </a>
-              </Button>
+              <div className="flex items-center gap-3">
+                <Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Pricing
+                </Link>
+                <Button asChild variant="default" className="font-semibold">
+                  <a href="/api/auth/login">
+                    Sign in with Replit
+                  </a>
+                </Button>
+              </div>
             )}
           </div>
         </div>

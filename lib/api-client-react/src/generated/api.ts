@@ -22,6 +22,7 @@ import type {
   HealthStatus,
   Scan,
   ScanWithFindings,
+  Subscription,
   SuccessResponse,
   User,
 } from "./api.schemas";
@@ -653,3 +654,240 @@ export function useStreamScan<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get current user subscription info
+ */
+export const getGetSubscriptionUrl = () => {
+  return `/api/subscription`;
+};
+
+export const getSubscription = async (
+  options?: RequestInit,
+): Promise<Subscription> => {
+  return customFetch<Subscription>(getGetSubscriptionUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSubscriptionQueryKey = () => {
+  return [`/api/subscription`] as const;
+};
+
+export const getGetSubscriptionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSubscription>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSubscription>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSubscriptionQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSubscription>>> = ({
+    signal,
+  }) => getSubscription({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSubscription>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSubscriptionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSubscription>>
+>;
+export type GetSubscriptionQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get current user subscription info
+ */
+
+export function useGetSubscription<
+  TData = Awaited<ReturnType<typeof getSubscription>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSubscription>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSubscriptionQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Upgrade to paid tier
+ */
+export const getUpgradeTierUrl = () => {
+  return `/api/subscription/upgrade`;
+};
+
+export const upgradeTier = async (
+  options?: RequestInit,
+): Promise<Subscription> => {
+  return customFetch<Subscription>(getUpgradeTierUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getUpgradeTierMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upgradeTier>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upgradeTier>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["upgradeTier"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upgradeTier>>,
+    void
+  > = () => {
+    return upgradeTier(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpgradeTierMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upgradeTier>>
+>;
+
+export type UpgradeTierMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Upgrade to paid tier
+ */
+export const useUpgradeTier = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upgradeTier>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upgradeTier>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getUpgradeTierMutationOptions(options));
+};
+
+/**
+ * @summary Downgrade to free tier
+ */
+export const getDowngradeTierUrl = () => {
+  return `/api/subscription/downgrade`;
+};
+
+export const downgradeTier = async (
+  options?: RequestInit,
+): Promise<Subscription> => {
+  return customFetch<Subscription>(getDowngradeTierUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getDowngradeTierMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof downgradeTier>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof downgradeTier>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["downgradeTier"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof downgradeTier>>,
+    void
+  > = () => {
+    return downgradeTier(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DowngradeTierMutationResult = NonNullable<
+  Awaited<ReturnType<typeof downgradeTier>>
+>;
+
+export type DowngradeTierMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Downgrade to free tier
+ */
+export const useDowngradeTier = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof downgradeTier>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof downgradeTier>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getDowngradeTierMutationOptions(options));
+};
