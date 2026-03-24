@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
+import { PromoVideo } from "@/components/PromoVideo";
 
 export default function Home() {
   const { data: user, isLoading } = useGetMe({
@@ -79,6 +80,17 @@ export default function Home() {
               </Button>
             </motion.div>
           </div>
+        </div>
+
+        {/* Video Section */}
+        <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+          >
+            <PromoVideo />
+          </motion.div>
         </div>
 
         {/* Features Section */}
