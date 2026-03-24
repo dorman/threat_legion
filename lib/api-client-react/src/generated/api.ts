@@ -257,6 +257,87 @@ export const useLogout = <
 };
 
 /**
+ * @summary Record that the current user has accepted the disclaimer
+ */
+export const getAcceptDisclaimerUrl = () => {
+  return `/api/auth/accept-disclaimer`;
+};
+
+export const acceptDisclaimer = async (
+  options?: RequestInit,
+): Promise<User> => {
+  return customFetch<User>(getAcceptDisclaimerUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getAcceptDisclaimerMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptDisclaimer>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof acceptDisclaimer>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["acceptDisclaimer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof acceptDisclaimer>>,
+    void
+  > = () => {
+    return acceptDisclaimer(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AcceptDisclaimerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof acceptDisclaimer>>
+>;
+
+export type AcceptDisclaimerMutationError = ErrorType<void>;
+
+/**
+ * @summary Record that the current user has accepted the disclaimer
+ */
+export const useAcceptDisclaimer = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptDisclaimer>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof acceptDisclaimer>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getAcceptDisclaimerMutationOptions(options));
+};
+
+/**
  * @summary List all scans for the current user
  */
 export const getListScansUrl = () => {

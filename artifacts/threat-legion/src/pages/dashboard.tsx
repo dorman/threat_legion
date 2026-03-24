@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRight, Loader2, Shield } from "lucide-react";
+import { Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRight, Loader2, Shield } from "lucide-react";
 import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
 import { format } from "date-fns";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
+import { DisclaimerModal } from "@/components/ui/DisclaimerModal";
 import { useGetMe, useListScans, useCreateScan, getGetMeQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
 import type { CreateScanMutationError } from "@workspace/api-client-react";
 import { getScoreColor, cn } from "@/lib/utils";
@@ -13,15 +14,15 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [repoUrl, setRepoUrl] = useState("");
   const [errorStr, setErrorStr] = useState("");
-  
+
   const { data: user, isLoading: isUserLoading, isError: isUserError } = useGetMe({
     query: { queryKey: getGetMeQueryKey(), retry: false }
   });
-  
+
   const { data: scans, isLoading: isScansLoading } = useListScans({
     query: { queryKey: getListScansQueryKey(), enabled: !!user }
   });
-  
+
   const { mutate: createScan, isPending: isCreating } = useCreateScan({
     mutation: {
       onSuccess: (data) => {
@@ -33,10 +34,23 @@ export default function Dashboard() {
     }
   });
 
-  if (!isUserLoading && isUserError) {
-    setLocation("/");
-    return null;
+  useEffect(() => {
+    if (!isUserLoading && isUserError) {
+      setLocation("/");
+    }
+  }, [isUserLoading, isUserError, setLocation]);
+
+  if (isUserLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
+
+  if (!user) return null;
+
+  const hasAcceptedDisclaimer = !!user.acceptedDisclaimerAt;
 
   const handleScanSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,16 +77,20 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {!hasAcceptedDisclaimer && (
+        <DisclaimerModal onAccepted={() => {}} />
+      )}
+
       <Navbar />
-      
+
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Left Column: Create Scan */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-card rounded-2xl border border-white/5 p-6 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10 blur-2xl" />
-              
+
               <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
                 <NinjaHoodIcon className="w-5 h-5 text-primary" />
                 New Security Scan
@@ -80,7 +98,7 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground mb-6">
                 Enter a GitHub repository URL you own or collaborate on to begin an autonomous vulnerability assessment.
               </p>
-              
+
               <form onSubmit={handleScanSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <label htmlFor="repoUrl" className="text-sm font-medium">Repository URL</label>
@@ -105,7 +123,7 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-                
+
                 <Button type="submit" disabled={isCreating} className="w-full h-11 font-semibold">
                   {isCreating ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing Agent...</>
@@ -115,23 +133,32 @@ export default function Dashboard() {
                 </Button>
               </form>
             </div>
-            
+
             <div className="bg-secondary/50 rounded-xl p-5 border border-white/5">
               <h3 className="font-medium mb-2 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-yellow-500" /> Authorization Required
               </h3>
               <p className="text-sm text-muted-foreground">
-                For security and ethical reasons, Threat Legion will verify you are an owner or collaborator of the target repository via your connected GitHub account.
+                For security and ethical reasons, Threat Legion verifies you are an owner or collaborator of the target repository via your connected GitHub account.
+              </p>
+            </div>
+
+            <div className="bg-secondary/30 rounded-xl p-5 border border-yellow-500/10">
+              <h3 className="font-medium mb-2 flex items-center gap-2 text-yellow-400/80">
+                <Shield className="w-4 h-4" /> Scanner Limitation Notice
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Scan results are not a security guarantee. Threat Legion may miss vulnerabilities. Always complement AI scanning with manual review and professional security testing.
               </p>
             </div>
           </div>
-          
+
           {/* Right Column: Scan History */}
           <div className="lg:col-span-2 space-y-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               Scan History
             </h2>
-            
+
             {isScansLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map(i => (
@@ -151,8 +178,8 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-4">
                 {scans.map(scan => (
-                  <Link 
-                    key={scan.id} 
+                  <Link
+                    key={scan.id}
                     href={scan.status === 'completed' ? `/scans/${scan.id}` : `/scans/${scan.id}/progress`}
                     className="block bg-card rounded-xl border border-white/5 p-5 hover:border-primary/30 transition-all group"
                   >
@@ -183,7 +210,7 @@ export default function Dashboard() {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-6">
                         {scan.status === 'completed' && (
                           <div className="hidden md:flex items-center gap-3">
@@ -209,7 +236,7 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-          
+
         </div>
       </main>
     </div>

@@ -25,6 +25,7 @@ export const GetMeResponse = zod.object({
   lastName: zod.string().nullish(),
   profileImageUrl: zod.string().nullish(),
   githubUsername: zod.string().nullish(),
+  acceptedDisclaimerAt: zod.date().nullish(),
   tier: zod.enum(["free", "paid"]),
 });
 
@@ -33,6 +34,20 @@ export const GetMeResponse = zod.object({
  */
 export const LogoutResponse = zod.object({
   message: zod.string(),
+});
+
+/**
+ * @summary Record that the current user has accepted the disclaimer
+ */
+export const AcceptDisclaimerResponse = zod.object({
+  id: zod.string(),
+  email: zod.string().nullish(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
+  profileImageUrl: zod.string().nullish(),
+  githubUsername: zod.string().nullish(),
+  acceptedDisclaimerAt: zod.date().nullish(),
+  tier: zod.enum(["free", "paid"]),
 });
 
 /**

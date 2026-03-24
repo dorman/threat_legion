@@ -14,5 +14,6 @@ export interface User {
   lastName?: string | null;
   profileImageUrl?: string | null;
   githubUsername?: string | null;
+  acceptedDisclaimerAt?: Date | null;
   tier: UserTier;
 }

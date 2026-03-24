@@ -63,6 +63,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /auth/accept-disclaimer:
+    post:
+      operationId: acceptDisclaimer
+      tags: [auth]
+      summary: Record that the current user has accepted the disclaimer
+      responses:
+        "200":
+          description: Disclaimer accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+
   /scans:
     get:
       operationId: listScans
@@ -282,6 +297,10 @@ components:
           nullable: true
         githubUsername:
           type: string
+          nullable: true
+        acceptedDisclaimerAt:
+          type: string
+          format: date-time
           nullable: true
         tier:
           type: string

@@ -4,7 +4,9 @@ import { db, usersTable } from "@workspace/db";
 import {
   getOidcConfig,
   getSessionId,
+  getSession,
   createSession,
+  updateSession,
   deleteSession,
   SESSION_COOKIE,
   SESSION_TTL,
@@ -12,6 +14,7 @@ import {
 } from "../lib/auth";
 import { getConnectorGithubUsername } from "../lib/github";
 import type { User } from "@workspace/api-zod";
+import { eq } from "drizzle-orm";
 
 const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
@@ -82,6 +85,7 @@ async function upsertUser(
     lastName: user.lastName ?? null,
     profileImageUrl: user.profileImageUrl ?? null,
     githubUsername: user.githubUsername ?? null,
+    acceptedDisclaimerAt: user.acceptedDisclaimerAt ?? null,
     tier: (user.tier as "free" | "paid") ?? "free",
   };
 }
@@ -180,6 +184,42 @@ router.get("/auth/callback", async (req: Request, res: Response) => {
   } catch (err) {
     res.redirect("/api/auth/login");
   }
+});
+
+router.post("/auth/accept-disclaimer", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  const currentUser = req.user as User;
+  const acceptedAt = new Date();
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ acceptedDisclaimerAt: acceptedAt, updatedAt: acceptedAt })
+    .where(eq(usersTable.id, currentUser.id))
+    .returning();
+
+  const updatedUser: User = {
+    id: updated.id,
+    email: updated.email ?? null,
+    firstName: updated.firstName ?? null,
+    lastName: updated.lastName ?? null,
+    profileImageUrl: updated.profileImageUrl ?? null,
+    githubUsername: updated.githubUsername ?? null,
+    acceptedDisclaimerAt: updated.acceptedDisclaimerAt ?? null,
+    tier: updated.tier as "free" | "paid",
+  };
+
+  const sid = getSessionId(req);
+  if (sid) {
+    const session = await getSession(sid);
+    if (session) {
+      await updateSession(sid, { ...session, user: updatedUser });
+    }
+  }
+
+  res.json(updatedUser);
 });
 
 router.post("/auth/logout", async (req: Request, res: Response) => {
