@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Check, X, Shield, Zap, Lock, ArrowLeft, Crown, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import {
   useGetMe,
@@ -245,6 +246,7 @@ export default function Pricing() {
           </div>
         </motion.div>
       </main>
+      <Footer />
     </div>
   );
 }

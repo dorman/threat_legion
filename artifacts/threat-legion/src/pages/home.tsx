@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { PromoVideo } from "@/components/PromoVideo";
 
 export default function Home() {
@@ -140,6 +141,7 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRig
 import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
 import { format } from "date-fns";
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { DisclaimerModal } from "@/components/ui/DisclaimerModal";
 import { useGetMe, useListScans, useCreateScan, getGetMeQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
@@ -239,6 +240,7 @@ export default function Dashboard() {
 
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
