@@ -1,4 +1,5 @@
-import { Link, useLocation } from "wouter";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 import { Search, Code, Zap, ArrowRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
@@ -11,8 +12,13 @@ export default function Home() {
   });
   const [, setLocation] = useLocation();
 
+  useEffect(() => {
+    if (!isLoading && user) {
+      setLocation("/dashboard");
+    }
+  }, [isLoading, user, setLocation]);
+
   if (!isLoading && user) {
-    setLocation("/dashboard");
     return null;
   }
 
