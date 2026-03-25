@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRight, Loader2, Shield, Lock } from "lucide-react";
+import { Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRight, Loader2, Shield, Lock, Trash2 } from "lucide-react";
 import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
 import { format } from "date-fns";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { DisclaimerModal } from "@/components/ui/DisclaimerModal";
-import { useGetMe, useListScans, useCreateScan, getGetMeQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
+import { useGetMe, useListScans, useCreateScan, useDeleteScan, getGetMeQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
 import type { CreateScanMutationError } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { getScoreColor, cn } from "@/lib/utils";
 
 type RepoCheck = "idle" | "checking" | "public" | "private" | "not_found";
@@ -30,7 +31,9 @@ export default function Dashboard() {
   const [repoUrl, setRepoUrl] = useState("");
   const [errorStr, setErrorStr] = useState("");
   const [repoCheck, setRepoCheck] = useState<RepoCheck>("idle");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: user, isLoading: isUserLoading, isError: isUserError } = useGetMe({
     query: { queryKey: getGetMeQueryKey(), retry: false }
@@ -47,6 +50,15 @@ export default function Dashboard() {
       },
       onError: (err: CreateScanMutationError) => {
         setErrorStr(err.data?.error ?? "Failed to start scan. Ensure you own or collaborate on this repository.");
+      }
+    }
+  });
+
+  const { mutate: deleteScan, isPending: isDeleting } = useDeleteScan({
+    mutation: {
+      onSuccess: () => {
+        setConfirmDeleteId(null);
+        void queryClient.invalidateQueries({ queryKey: getListScansQueryKey() });
       }
     }
   });
@@ -274,62 +286,113 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {scans.map(scan => (
-                  <Link
-                    key={scan.id}
-                    href={scan.status === 'completed' ? `/scans/${scan.id}` : `/scans/${scan.id}/progress`}
-                    className="block bg-card rounded-xl border border-white/5 p-5 hover:border-primary/30 transition-all group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="hidden sm:block">
-                          {getStatusIcon(scan.status)}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-                              {scan.repoOwner}/{scan.repoName}
-                            </h3>
-                            <span className={cn(
-                              "text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wider",
-                              scan.status === 'completed' ? "bg-green-500/10 text-green-500" :
-                              scan.status === 'failed' ? "bg-red-500/10 text-red-500" :
-                              "bg-primary/10 text-primary"
-                            )}>
-                              {scan.status}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground flex items-center gap-3">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {format(new Date(scan.createdAt), 'MMM d, yyyy HH:mm')}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
+                {scans.map(scan => {
+                  const isConfirming = confirmDeleteId === scan.id;
+                  const isDeletingThis = isDeleting && isConfirming;
+                  const canDelete = scan.status === 'completed' || scan.status === 'failed';
 
-                      <div className="flex items-center gap-6">
-                        {scan.status === 'completed' && (
-                          <div className="hidden md:flex items-center gap-3">
-                            <div className="flex items-center gap-1.5 text-sm bg-red-500/10 text-red-500 px-2 py-1 rounded-md font-medium">
-                              <AlertTriangle className="w-3.5 h-3.5" /> {scan.criticalCount} Critical
+                  return (
+                    <div key={scan.id} className="relative group/card">
+                      <Link
+                        href={scan.status === 'completed' ? `/scans/${scan.id}` : `/scans/${scan.id}/progress`}
+                        className={cn(
+                          "block bg-card rounded-xl border border-white/5 p-5 hover:border-primary/30 transition-all group",
+                          isConfirming && "border-destructive/40 hover:border-destructive/60"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="hidden sm:block">
+                              {getStatusIcon(scan.status)}
                             </div>
-                            <div className="flex items-center gap-1.5 text-sm bg-orange-500/10 text-orange-500 px-2 py-1 rounded-md font-medium">
-                              <AlertTriangle className="w-3.5 h-3.5" /> {scan.highCount} High
-                            </div>
-                            <div className="flex flex-col items-center ml-4">
-                              <span className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">Score</span>
-                              <span className={cn("text-xl font-bold font-mono", getScoreColor(scan.score || 0))}>
-                                {scan.score || 0}
-                              </span>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                                  {scan.repoOwner}/{scan.repoName}
+                                </h3>
+                                <span className={cn(
+                                  "text-xs px-2 py-0.5 rounded-full font-medium uppercase tracking-wider",
+                                  scan.status === 'completed' ? "bg-green-500/10 text-green-500" :
+                                  scan.status === 'failed' ? "bg-red-500/10 text-red-500" :
+                                  "bg-primary/10 text-primary"
+                                )}>
+                                  {scan.status}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground flex items-center gap-3">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {format(new Date(scan.createdAt), 'MMM d, yyyy HH:mm')}
+                                </span>
+                              </p>
                             </div>
                           </div>
-                        )}
-                        <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                      </div>
+
+                          <div className="flex items-center gap-4">
+                            {scan.status === 'completed' && (
+                              <div className="hidden md:flex items-center gap-3">
+                                <div className="flex items-center gap-1.5 text-sm bg-red-500/10 text-red-500 px-2 py-1 rounded-md font-medium">
+                                  <AlertTriangle className="w-3.5 h-3.5" /> {scan.criticalCount} Critical
+                                </div>
+                                <div className="flex items-center gap-1.5 text-sm bg-orange-500/10 text-orange-500 px-2 py-1 rounded-md font-medium">
+                                  <AlertTriangle className="w-3.5 h-3.5" /> {scan.highCount} High
+                                </div>
+                                <div className="flex flex-col items-center ml-2">
+                                  <span className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">Score</span>
+                                  <span className={cn("text-xl font-bold font-mono", getScoreColor(scan.score || 0))}>
+                                    {scan.score || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Delete / confirm row */}
+                            {canDelete && (
+                              <div
+                                className="flex items-center gap-2 ml-2"
+                                onClick={(e) => e.preventDefault()}
+                              >
+                                {isConfirming ? (
+                                  <>
+                                    <button
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeleteId(null); }}
+                                      className="text-xs px-2.5 py-1 rounded-md border border-white/10 text-muted-foreground hover:text-foreground hover:border-white/20 transition-colors"
+                                      disabled={isDeletingThis}
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteScan({ id: scan.id }); }}
+                                      className="text-xs px-2.5 py-1 rounded-md bg-destructive/90 hover:bg-destructive text-white font-medium transition-colors flex items-center gap-1"
+                                      disabled={isDeletingThis}
+                                    >
+                                      {isDeletingThis
+                                        ? <><Loader2 className="w-3 h-3 animate-spin" /> Deleting…</>
+                                        : <><Trash2 className="w-3 h-3" /> Confirm</>
+                                      }
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeleteId(scan.id); }}
+                                    className="opacity-0 group-hover/card:opacity-100 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                                    title="Delete scan"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                            {!isConfirming && (
+                              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                            )}
+                          </div>
+                        </div>
+                      </Link>
                     </div>
-                  </Link>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
