@@ -279,8 +279,18 @@ router.get("/scans/:id/stream", async (req: Request, res: Response): Promise<voi
       type: scan.status === "completed" ? "complete" : "error",
       ...(scan.status === "completed"
         ? { score: scan.score ?? 0, summary: scan.summary ?? "Scan complete" }
-        : { message: "Scan already failed" }),
+        : { message: "Scan failed" }),
     } as ScanEvent);
+    res.end();
+    return;
+  }
+
+  if (!activeScanIds.has(scanId)) {
+    await db
+      .update(scansTable)
+      .set({ status: "failed", completedAt: new Date() })
+      .where(eq(scansTable.id, scanId));
+    sendEvent({ type: "error", message: "Scan process was interrupted. Please start a new scan." } as ScanEvent);
     res.end();
     return;
   }
