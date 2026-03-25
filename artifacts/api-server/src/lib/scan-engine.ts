@@ -1,8 +1,24 @@
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import OpenAI from "openai";
 import { db, scansTable, findingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getRepoFileTree, getFileContent } from "./github";
 import { logger } from "./logger";
+
+// ============================================================
+// OPENROUTER CLIENT
+// ============================================================
+
+const OPENROUTER_API_KEY = process.env["OPENROUTER_API_KEY"];
+if (!OPENROUTER_API_KEY) {
+  throw new Error("OPENROUTER_API_KEY environment variable is required");
+}
+
+const openrouter = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: OPENROUTER_API_KEY,
+});
+
+const MODEL = "anthropic/claude-sonnet-4.6";
 
 // ============================================================
 // PUBLIC TYPES
@@ -26,17 +42,12 @@ export type FindingData = {
 };
 
 // ============================================================
-// INTERNAL TYPES (Anthropic SDK shapes)
+// INTERNAL TYPES (OpenAI SDK shapes)
 // ============================================================
 
-type CreateParams = Parameters<typeof anthropic.messages.create>[0];
-type MessageParam = CreateParams["messages"][number];
-type ToolDef = NonNullable<CreateParams["tools"]>[number];
-
-type TextBlock = { type: "text"; text: string };
-type ToolUseBlock = { type: "tool_use"; id: string; name: string; input: unknown };
-type ResponseBlock = TextBlock | ToolUseBlock;
-type ToolResultParam = { type: "tool_result"; tool_use_id: string; content: string };
+type ChatMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam;
+type ToolDef = OpenAI.Chat.Completions.ChatCompletionTool;
+type ToolCall = { id: string; function: { name: string; arguments: string } };
 
 type AgentRole = "auth" | "injection" | "secrets" | "dependency" | "general";
 
@@ -85,124 +96,145 @@ async function runConcurrently<T>(
 // ============================================================
 
 const COORDINATOR_TOOL: ToolDef = {
-  name: "categorize_files",
-  description:
-    "Classify repository files into security analysis domains. Each file should appear in exactly one category (except config files which always go to dependency if they're manifests, or general otherwise). The secrets agent searches all files automatically so do not add files to a secrets category.",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      auth: {
-        type: "array",
-        items: { type: "string" },
-        description:
-          "Files handling authentication, authorization, sessions, JWT tokens, OAuth, passwords, permissions, middleware guards",
+  type: "function",
+  function: {
+    name: "categorize_files",
+    description:
+      "Classify repository files into security analysis domains. Each file should appear in exactly one category. The secrets agent searches all files automatically so do not add files to a secrets category.",
+    parameters: {
+      type: "object",
+      properties: {
+        auth: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Files handling authentication, authorization, sessions, JWT tokens, OAuth, passwords, permissions, middleware guards",
+        },
+        injection: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Files handling database queries, SQL/ORM operations, user input processing, request bodies, template rendering, file paths from user input",
+        },
+        dependency: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Package manifest files: package.json, requirements.txt, Gemfile, go.mod, Cargo.toml, composer.json, pom.xml, build.gradle, .lock files",
+        },
+        general: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "All remaining files: API routes, config files, utility code, anything not in the above categories",
+        },
       },
-      injection: {
-        type: "array",
-        items: { type: "string" },
-        description:
-          "Files handling database queries, SQL/ORM operations, user input processing, request bodies, template rendering, file paths from user input",
-      },
-      dependency: {
-        type: "array",
-        items: { type: "string" },
-        description:
-          "Package manifest files: package.json, requirements.txt, Gemfile, go.mod, Cargo.toml, composer.json, pom.xml, build.gradle, .lock files",
-      },
-      general: {
-        type: "array",
-        items: { type: "string" },
-        description:
-          "All remaining files: API routes, config files, utility code, anything not in the above categories",
-      },
+      required: ["auth", "injection", "dependency", "general"],
     },
-    required: ["auth", "injection", "dependency", "general"],
   },
 };
 
 const SYNTHESIZER_TOOL: ToolDef = {
-  name: "produce_report",
-  description: "Produce the final security report after reviewing all agent findings",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      score: {
-        type: "number",
-        description:
-          "Overall security score from 0–100. Start at 100. Deduct: 20 per critical, 10 per high, 5 per medium, 2 per low. Minimum 0.",
+  type: "function",
+  function: {
+    name: "produce_report",
+    description: "Produce the final security report after reviewing all agent findings",
+    parameters: {
+      type: "object",
+      properties: {
+        score: {
+          type: "number",
+          description:
+            "Overall security score from 0–100. Start at 100. Deduct: 20 per critical, 10 per high, 5 per medium, 2 per low. Minimum 0.",
+        },
+        summary: {
+          type: "string",
+          description:
+            "Executive summary (3–5 sentences). Highlight the most severe findings, which agents found them, and the biggest remediation priorities.",
+        },
       },
-      summary: {
-        type: "string",
-        description:
-          "Executive summary (3–5 sentences). Highlight the most severe findings, which agents found them, and the biggest remediation priorities.",
-      },
+      required: ["score", "summary"],
     },
-    required: ["score", "summary"],
   },
 };
 
-function buildSpecialistTools(role: AgentRole): ToolDef[] {
+function buildSpecialistTools(_role: AgentRole): ToolDef[] {
   return [
     {
-      name: "read_file",
-      description: "Read the contents of a specific file in the repository",
-      input_schema: {
-        type: "object" as const,
-        properties: { path: { type: "string", description: "File path to read" } },
-        required: ["path"],
+      type: "function",
+      function: {
+        name: "read_file",
+        description: "Read the contents of a specific file in the repository",
+        parameters: {
+          type: "object",
+          properties: { path: { type: "string", description: "File path to read" } },
+          required: ["path"],
+        },
       },
     },
     {
-      name: "list_directory",
-      description: "List files in the repository",
-      input_schema: {
-        type: "object" as const,
-        properties: {
-          path: { type: "string", description: "Directory path (use / for root)" },
+      type: "function",
+      function: {
+        name: "list_directory",
+        description: "List files in the repository",
+        parameters: {
+          type: "object",
+          properties: {
+            path: { type: "string", description: "Directory path (use / for root)" },
+          },
+          required: ["path"],
         },
-        required: ["path"],
       },
     },
     {
-      name: "search_files",
-      description: "Search for a regex pattern across all repository files",
-      input_schema: {
-        type: "object" as const,
-        properties: {
-          pattern: { type: "string", description: "Regex pattern to search for" },
-          max_results: { type: "number", description: "Max number of matches to return (default 20)" },
+      type: "function",
+      function: {
+        name: "search_files",
+        description: "Search for a regex pattern across all repository files",
+        parameters: {
+          type: "object",
+          properties: {
+            pattern: { type: "string", description: "Regex pattern to search for" },
+            max_results: { type: "number", description: "Max number of matches to return (default 20)" },
+          },
+          required: ["pattern"],
         },
-        required: ["pattern"],
       },
     },
     {
-      name: "report_finding",
-      description: "Report a confirmed security vulnerability finding",
-      input_schema: {
-        type: "object" as const,
-        properties: {
-          severity: { type: "string", description: "critical | high | medium | low" },
-          title: { type: "string", description: "Short descriptive title" },
-          file_path: { type: "string", description: "Affected file path" },
-          line_start: { type: "number", description: "Starting line number" },
-          line_end: { type: "number", description: "Ending line number" },
-          description: { type: "string", description: "Detailed explanation of the vulnerability and its risk" },
-          remediation: { type: "string", description: "Specific steps to fix the vulnerability" },
-          code_snippet: { type: "string", description: "The vulnerable code snippet" },
+      type: "function",
+      function: {
+        name: "report_finding",
+        description: "Report a confirmed security vulnerability finding",
+        parameters: {
+          type: "object",
+          properties: {
+            severity: { type: "string", description: "critical | high | medium | low" },
+            title: { type: "string", description: "Short descriptive title" },
+            file_path: { type: "string", description: "Affected file path" },
+            line_start: { type: "number", description: "Starting line number" },
+            line_end: { type: "number", description: "Ending line number" },
+            description: { type: "string", description: "Detailed explanation of the vulnerability and its risk" },
+            remediation: { type: "string", description: "Specific steps to fix the vulnerability" },
+            code_snippet: { type: "string", description: "The vulnerable code snippet" },
+          },
+          required: ["severity", "title", "description", "remediation"],
         },
-        required: ["severity", "title", "description", "remediation"],
       },
     },
     {
-      name: "complete_analysis",
-      description: `Signal that the ${role} security analysis is complete. Call this when you have finished reviewing all assigned files.`,
-      input_schema: {
-        type: "object" as const,
-        properties: {
-          files_reviewed: { type: "number", description: "Number of files examined" },
-          notes: { type: "string", description: "Brief summary of what was reviewed" },
+      type: "function",
+      function: {
+        name: "complete_analysis",
+        description: "Signal that the security analysis is complete. Call this when you have finished reviewing all assigned files.",
+        parameters: {
+          type: "object",
+          properties: {
+            files_reviewed: { type: "number", description: "Number of files examined" },
+            notes: { type: "string", description: "Brief summary of what was reviewed" },
+          },
+          required: ["files_reviewed"],
         },
-        required: ["files_reviewed"],
       },
     },
   ];
@@ -303,7 +335,7 @@ type CompleteInput = { files_reviewed?: number; notes?: string };
 type SpecialistToolInput = FileToolInput & SearchToolInput & ReportFindingInput & CompleteInput;
 
 async function executeSpecialistTool(
-  block: ToolUseBlock,
+  toolCall: ToolCall,
   allFiles: string[],
   owner: string,
   repo: string,
@@ -312,8 +344,13 @@ async function executeSpecialistTool(
   agentLabel: string,
   onEvent: (event: ScanEvent) => void
 ): Promise<{ result: string; isDone: boolean }> {
-  const name = block.name;
-  const input = block.input as SpecialistToolInput;
+  const name = toolCall.function.name;
+  let input: SpecialistToolInput;
+  try {
+    input = JSON.parse(toolCall.function.arguments) as SpecialistToolInput;
+  } catch {
+    return { result: "Invalid tool arguments", isDone: false };
+  }
 
   if (name === "read_file") {
     const content = await getFileContent(owner, repo, input.path ?? "");
@@ -416,14 +453,17 @@ async function runCoordinator(
   onEvent({ type: "log", message: "Coordinator agent classifying repository structure..." });
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+    const response = await openrouter.chat.completions.create({
+      model: MODEL,
       max_tokens: 4096,
-      system:
-        "You are a security scan coordinator. Your only job is to classify a list of repository files into security analysis domains so that specialist agents can focus their expertise. Be precise and thorough — every file should be assigned to exactly one category.",
       tools: [COORDINATOR_TOOL],
-      tool_choice: { type: "tool", name: "categorize_files" },
+      tool_choice: { type: "function", function: { name: "categorize_files" } },
       messages: [
+        {
+          role: "system",
+          content:
+            "You are a security scan coordinator. Your only job is to classify a list of repository files into security analysis domains so that specialist agents can focus their expertise. Be precise and thorough — every file should be assigned to exactly one category.",
+        },
         {
           role: "user",
           content: `Classify these ${files.length} repository files into the four security analysis domains:
@@ -441,9 +481,9 @@ Every file must appear in exactly one category.`,
       ],
     });
 
-    const toolBlock = response.content.find((b) => b.type === "tool_use");
-    if (toolBlock && "input" in toolBlock) {
-      const cats = toolBlock.input as FileCategories;
+    const rawTc = (response.choices[0]?.message?.tool_calls as ToolCall[] | undefined)?.[0];
+    if (rawTc) {
+      const cats = JSON.parse(rawTc.function.arguments) as FileCategories;
       const total =
         cats.auth.length + cats.injection.length + cats.dependency.length + cats.general.length;
       onEvent({
@@ -456,7 +496,6 @@ Every file must appear in exactly one category.`,
     logger.warn({ err }, "Coordinator agent failed — falling back to full-general");
   }
 
-  // Fallback: everything goes to the general agent
   return { auth: [], injection: [], dependency: [], general: files };
 }
 
@@ -486,7 +525,8 @@ async function runSpecialistAgent(
   const tools = buildSpecialistTools(spec.role);
   const systemPrompt = SPECIALIST_PROMPTS[spec.role];
 
-  const messages: MessageParam[] = [
+  const messages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
     {
       role: "user",
       content: `You are the ${spec.label} agent in a multi-agent security scan of ${owner}/${repo}.
@@ -507,12 +547,11 @@ Start now.`,
   while (!done && iterations < MAX_ITER) {
     iterations++;
 
-    let response;
+    let response: OpenAI.Chat.Completions.ChatCompletion;
     try {
-      response = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
+      response = await openrouter.chat.completions.create({
+        model: MODEL,
         max_tokens: 8192,
-        system: systemPrompt,
         tools,
         messages,
       });
@@ -522,25 +561,21 @@ Start now.`,
       break;
     }
 
-    const responseBlocks = response.content as ResponseBlock[];
-    messages.push({
-      role: "assistant",
-      content: responseBlocks as MessageParam extends { role: "assistant"; content: infer C }
-        ? C
-        : never,
-    });
+    const assistantMessage = response.choices[0]?.message;
+    if (!assistantMessage) break;
 
-    if (response.stop_reason === "end_turn") break;
+    messages.push(assistantMessage);
 
-    const toolBlocks = responseBlocks.filter(
-      (b): b is ToolUseBlock => b.type === "tool_use"
-    );
-    if (toolBlocks.length === 0) break;
+    const finishReason = response.choices[0]?.finish_reason;
+    if (finishReason === "stop") break;
 
-    const toolResults: ToolResultParam[] = [];
-    for (const block of toolBlocks) {
+    const rawToolCalls = assistantMessage.tool_calls as ToolCall[] | undefined;
+    const toolCalls = rawToolCalls;
+    if (!toolCalls || toolCalls.length === 0) break;
+
+    for (const toolCall of toolCalls) {
       const { result, isDone } = await executeSpecialistTool(
-        block,
+        toolCall,
         allFiles,
         owner,
         repo,
@@ -549,16 +584,13 @@ Start now.`,
         spec.label,
         onEvent
       );
-      toolResults.push({ type: "tool_result", tool_use_id: block.id, content: result });
+      messages.push({
+        role: "tool",
+        tool_call_id: toolCall.id,
+        content: result,
+      });
       if (isDone) done = true;
     }
-
-    messages.push({
-      role: "user",
-      content: toolResults as MessageParam extends { role: "user"; content: infer C }
-        ? C
-        : never,
-    });
 
     if (done) break;
   }
@@ -591,14 +623,17 @@ async function runSynthesizer(
     .join("\n");
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+    const response = await openrouter.chat.completions.create({
+      model: MODEL,
       max_tokens: 2048,
-      system:
-        "You are a senior security analyst synthesising results from a multi-agent vulnerability scan. Produce an accurate, calibrated final assessment.",
       tools: [SYNTHESIZER_TOOL],
-      tool_choice: { type: "tool", name: "produce_report" },
+      tool_choice: { type: "function", function: { name: "produce_report" } },
       messages: [
+        {
+          role: "system",
+          content:
+            "You are a senior security analyst synthesising results from a multi-agent vulnerability scan. Produce an accurate, calibrated final assessment.",
+        },
         {
           role: "user",
           content: `Repository: ${owner}/${repo}
@@ -618,9 +653,9 @@ Produce the final security score and executive summary. The score should start a
       ],
     });
 
-    const toolBlock = response.content.find((b) => b.type === "tool_use");
-    if (toolBlock && "input" in toolBlock) {
-      const out = toolBlock.input as { score: number; summary: string };
+    const rawTc = (response.choices[0]?.message?.tool_calls as ToolCall[] | undefined)?.[0];
+    if (rawTc) {
+      const out = JSON.parse(rawTc.function.arguments) as { score: number; summary: string };
       return {
         score: Math.max(0, Math.min(100, out.score)),
         summary: out.summary,
@@ -630,7 +665,6 @@ Produce the final security score and executive summary. The score should start a
     logger.warn({ err }, "Synthesizer agent failed — using computed fallback");
   }
 
-  // Computed fallback
   const score = Math.max(
     0,
     100 - critCount * 20 - highCount * 10 - medCount * 5 - lowCount * 2
@@ -659,45 +693,39 @@ export async function runScan(
       .set({ status: "running", startedAt: new Date() })
       .where(eq(scansTable.id, scanId));
 
-    // ── Phase 0: Fetch file tree ──────────────────────────────
     onEvent({ type: "log", message: `Starting multi-agent scan of ${owner}/${repo}...` });
     const allFiles = await getRepoFileTree(owner, repo, 200);
     onEvent({ type: "log", message: `Fetched ${allFiles.length} files from repository` });
 
-    // ── Phase 1: Coordinator classifies files ─────────────────
     const categories = await runCoordinator(allFiles, onEvent);
 
-    // ── Phase 2: Build specialist specs ───────────────────────
-    const agentSpecs: AgentSpec[] = (
-      [
-        {
-          role: "auth" as AgentRole,
-          label: "Auth & Authorization",
-          assignedFiles: categories.auth,
-        },
-        {
-          role: "injection" as AgentRole,
-          label: "Injection Vulnerabilities",
-          assignedFiles: categories.injection,
-        },
-        {
-          role: "secrets" as AgentRole,
-        label: "Secrets & Exposure",
-        // Secrets agent searches all files via search_files — no pre-assigned subset
-        assignedFiles: allFiles.slice(0, 20), // top-level files as starting point
+    const agentSpecs: AgentSpec[] = ([
+      {
+        role: "auth" as AgentRole,
+        label: "Auth & Authorization",
+        assignedFiles: categories.auth,
       },
-        {
-          role: "dependency" as AgentRole,
-          label: "Dependency Security",
-          assignedFiles: categories.dependency,
-        },
-        {
-          role: "general" as AgentRole,
-          label: "General Security",
-          assignedFiles: categories.general,
-        },
-      ] as AgentSpec[]
-    ).filter((s) => s.assignedFiles.length > 0);
+      {
+        role: "injection" as AgentRole,
+        label: "Injection Vulnerabilities",
+        assignedFiles: categories.injection,
+      },
+      {
+        role: "secrets" as AgentRole,
+        label: "Secrets & Exposure",
+        assignedFiles: allFiles.slice(0, 20),
+      },
+      {
+        role: "dependency" as AgentRole,
+        label: "Dependency Security",
+        assignedFiles: categories.dependency,
+      },
+      {
+        role: "general" as AgentRole,
+        label: "General Security",
+        assignedFiles: categories.general,
+      },
+    ] as AgentSpec[]).filter((s) => s.assignedFiles.length > 0);
 
     const agentCount = agentSpecs.length;
     onEvent({
@@ -705,7 +733,6 @@ export async function runScan(
       message: `Launching ${agentCount} specialist agents in parallel (max 3 concurrent)...`,
     });
 
-    // ── Phase 2: Run specialists (max 3 concurrent) ───────────
     await runConcurrently(
       agentSpecs.map(
         (spec) => () =>
@@ -719,10 +746,8 @@ export async function runScan(
       message: `All ${agentCount} agents finished. ${allFindings.length} total finding${allFindings.length !== 1 ? "s" : ""} collected.`,
     });
 
-    // ── Phase 3: Synthesizer produces final report ────────────
     const { score, summary } = await runSynthesizer(allFindings, owner, repo, onEvent);
 
-    // Persist scan results
     const criticalCount = allFindings.filter((f) => f.severity === "critical").length;
     const highCount = allFindings.filter((f) => f.severity === "high").length;
     const mediumCount = allFindings.filter((f) => f.severity === "medium").length;

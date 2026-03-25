@@ -196,6 +196,9 @@ importers:
       express:
         specifier: ^5
         version: 5.2.1
+      openai:
+        specifier: ^6.32.0
+        version: 6.32.0(zod@4.3.6)
       openid-client:
         specifier: ^6.8.2
         version: 6.8.2
@@ -667,6 +670,18 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 25.3.5
+
+  lib/integrations-openrouter-ai:
+    dependencies:
+      openai:
+        specifier: ^6.27.0
+        version: 6.32.0(zod@4.3.6)
+      p-limit:
+        specifier: ^7.3.0
+        version: 7.3.0
+      p-retry:
+        specifier: ^7.1.1
+        version: 7.1.1
 
   scripts:
     devDependencies:
@@ -2661,6 +2676,18 @@ packages:
 
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
+
+  openai@6.32.0:
+    resolution: {integrity: sha512-j3k+BjydAf8yQlcOI7WUQMQTbbF5GEIMAE2iZYCOzwwB3S2pCheaWYp+XZRNAch4jWVc52PMDGRRjutao3lLCg==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
 
   openid-client@6.8.2:
     resolution: {integrity: sha512-uOvTCndr4udZsKihJ68H9bUICrriHdUVJ6Az+4Ns6cW55rwM5h0bjVIzDz2SxgOI84LKjFyjOFvERLzdTUROGA==}
@@ -5331,6 +5358,10 @@ snapshots:
   once@1.4.0:
     dependencies:
       wrappy: 1.0.2
+
+  openai@6.32.0(zod@4.3.6):
+    optionalDependencies:
+      zod: 4.3.6
 
   openid-client@6.8.2:
     dependencies:
