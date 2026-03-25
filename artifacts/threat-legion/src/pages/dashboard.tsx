@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRight, Loader2, Shield } from "lucide-react";
+import { Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRight, Loader2, Shield, Lock } from "lucide-react";
 import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
 import { format } from "date-fns";
 import { Navbar } from "@/components/layout/Navbar";
@@ -11,10 +11,26 @@ import { useGetMe, useListScans, useCreateScan, getGetMeQueryKey, getListScansQu
 import type { CreateScanMutationError } from "@workspace/api-client-react";
 import { getScoreColor, cn } from "@/lib/utils";
 
+type RepoCheck = "idle" | "checking" | "public" | "private" | "not_found";
+
+function parseGithubUrl(url: string): { owner: string; repo: string } | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname !== "github.com") return null;
+    const parts = u.pathname.replace(/^\//, "").replace(/\.git$/, "").split("/");
+    if (parts.length < 2 || !parts[0] || !parts[1]) return null;
+    return { owner: parts[0], repo: parts[1] };
+  } catch {
+    return null;
+  }
+}
+
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [repoUrl, setRepoUrl] = useState("");
   const [errorStr, setErrorStr] = useState("");
+  const [repoCheck, setRepoCheck] = useState<RepoCheck>("idle");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: user, isLoading: isUserLoading, isError: isUserError } = useGetMe({
     query: { queryKey: getGetMeQueryKey(), retry: false }
@@ -41,6 +57,42 @@ export default function Dashboard() {
     }
   }, [isUserLoading, isUserError, setLocation]);
 
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const parsed = parseGithubUrl(repoUrl);
+    if (!parsed) {
+      setRepoCheck("idle");
+      return;
+    }
+
+    setRepoCheck("checking");
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`,
+          { headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } }
+        );
+        if (res.status === 404) {
+          setRepoCheck("private");
+          return;
+        }
+        if (!res.ok) {
+          setRepoCheck("not_found");
+          return;
+        }
+        const data = (await res.json()) as { private?: boolean };
+        setRepoCheck(data.private ? "private" : "public");
+      } catch {
+        setRepoCheck("not_found");
+      }
+    }, 600);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [repoUrl]);
+
   if (isUserLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -62,6 +114,14 @@ export default function Dashboard() {
     }
     if (!repoUrl.includes("github.com")) {
       setErrorStr("Only GitHub repositories are supported currently");
+      return;
+    }
+    if (repoCheck === "private") {
+      setErrorStr("Private repositories cannot be scanned due to data privacy restrictions.");
+      return;
+    }
+    if (repoCheck === "checking") {
+      setErrorStr("Please wait while we verify the repository...");
       return;
     }
     createScan({ data: { repoUrl } });
@@ -110,14 +170,44 @@ export default function Dashboard() {
                       type="url"
                       placeholder="https://github.com/username/repo"
                       value={repoUrl}
-                      onChange={(e) => setRepoUrl(e.target.value)}
+                      onChange={(e) => {
+                        setRepoUrl(e.target.value);
+                        setErrorStr("");
+                      }}
                       className={cn(
-                        "w-full h-11 pl-10 pr-4 rounded-lg bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono text-sm",
-                        errorStr && "border-destructive focus:border-destructive focus:ring-destructive/20"
+                        "w-full h-11 pl-10 pr-10 rounded-lg bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono text-sm",
+                        (errorStr || repoCheck === "private") && "border-destructive focus:border-destructive focus:ring-destructive/20",
+                        repoCheck === "public" && "border-green-500/60 focus:border-green-500 focus:ring-green-500/20"
                       )}
                       disabled={isCreating}
                     />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {repoCheck === "checking" && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                      {repoCheck === "public" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                      {repoCheck === "private" && <Lock className="w-4 h-4 text-destructive" />}
+                    </div>
                   </div>
+
+                  {repoCheck === "private" && (
+                    <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 mt-2">
+                      <div className="flex items-start gap-2">
+                        <Lock className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-destructive">Private repository — cannot scan</p>
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                            ThreatLegion sends code to a third-party AI provider (Claude AI by Anthropic) for analysis. To protect your privacy, only <strong>public repositories</strong> are permitted. Private source code is never shared with external AI services.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {repoCheck === "public" && !errorStr && (
+                    <p className="text-xs text-green-500 flex items-center gap-1 mt-1">
+                      <CheckCircle2 className="w-3 h-3" /> Public repository confirmed — safe to scan
+                    </p>
+                  )}
+
                   {errorStr && (
                     <p className="text-sm text-destructive flex items-center gap-1 mt-1">
                       <AlertTriangle className="w-3 h-3" /> {errorStr}
@@ -125,9 +215,15 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <Button type="submit" disabled={isCreating} className="w-full h-11 font-semibold">
+                <Button
+                  type="submit"
+                  disabled={isCreating || repoCheck === "private" || repoCheck === "checking"}
+                  className="w-full h-11 font-semibold"
+                >
                   {isCreating ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing Agent...</>
+                  ) : repoCheck === "checking" ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Checking Repository...</>
                   ) : (
                     <><Search className="w-4 h-4 mr-2" /> Start Autonomous Scan</>
                   )}

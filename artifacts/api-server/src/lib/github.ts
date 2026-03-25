@@ -84,6 +84,42 @@ export async function verifyRepoOwnership(
   }
 }
 
+/**
+ * Checks whether a GitHub repository is publicly accessible using an
+ * unauthenticated request. This deliberately avoids the connector's auth
+ * token so that private repos are never accessible to the AI scanner.
+ *
+ * Returns "public" | "private" | "not_found".
+ * - "public"    → repo exists and is publicly readable — safe to scan
+ * - "private"   → repo exists but requires auth (confirmed private)
+ * - "not_found" → repo does not exist or cannot be resolved
+ */
+export async function checkRepoVisibility(
+  owner: string,
+  repo: string
+): Promise<"public" | "private" | "not_found"> {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+      {
+        method: "GET",
+        headers: {
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      }
+    );
+
+    if (res.status === 404) return "private";
+    if (!res.ok) return "not_found";
+
+    const data = (await res.json()) as { private?: boolean };
+    return data.private ? "private" : "public";
+  } catch {
+    return "not_found";
+  }
+}
+
 export async function getRepoFileTree(
   owner: string,
   repo: string,
