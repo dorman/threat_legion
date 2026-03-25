@@ -196,9 +196,6 @@ importers:
       express:
         specifier: ^5
         version: 5.2.1
-      openai:
-        specifier: ^6.32.0
-        version: 6.32.0(zod@4.3.6)
       openid-client:
         specifier: ^6.8.2
         version: 6.8.2
