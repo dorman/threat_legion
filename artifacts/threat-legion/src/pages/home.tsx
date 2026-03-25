@@ -99,7 +99,7 @@ export default function Home() {
             >
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8">
                 <Activity className="w-4 h-4 animate-pulse" />
-                <span>Early Access — Join the Waitlist</span>
+                <span>Join the Waitlist</span>
               </div>
 
               <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
@@ -115,7 +115,7 @@ export default function Home() {
               </p>
               <p className="text-sm text-muted-foreground/70 mb-12 max-w-xl mx-auto">
                 We're putting the finishing touches on the platform. Drop your email below
-                and we'll notify you the moment early access opens.
+                and we'll notify you when we launch.
               </p>
             </motion.div>
 
@@ -136,7 +136,7 @@ export default function Home() {
                   onSubmit={handleWaitlist}
                   className="max-w-md mx-auto bg-card/60 backdrop-blur border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4"
                 >
-                  <h2 className="text-lg font-semibold text-left">Get early access</h2>
+                  <h2 className="text-lg font-semibold text-left">Join the waitlist</h2>
 
                   <div className="space-y-3">
                     <input
@@ -176,7 +176,7 @@ export default function Home() {
 
                   <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-1.5">
                     <Lock className="w-3 h-3" />
-                    No spam. Unsubscribe anytime. Early access users get lifetime discounts.
+                    No spam. Unsubscribe anytime.
                   </p>
                 </form>
               )}
