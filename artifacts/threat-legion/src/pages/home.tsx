@@ -6,6 +6,7 @@ import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { PromoVideo } from "@/components/PromoVideo";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
 
@@ -212,6 +213,13 @@ export default function Home() {
                 </a>
               </p>
             </motion.div>
+          </div>
+        </div>
+
+        {/* Promo Video */}
+        <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <div className="max-w-2xl mx-auto">
+            <PromoVideo />
           </div>
         </div>
 
