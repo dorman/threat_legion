@@ -110,7 +110,7 @@ export default function Home() {
               </h1>
 
               <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto leading-relaxed">
-                Threat Legion autonomously scans your GitHub repositories for security vulnerabilities
+                Threat Legion autonomously scans your <strong>public GitHub repositories</strong> for security vulnerabilities
                 — with real-time AI reasoning, severity ranking, and code-level remediation.
               </p>
               <p className="text-sm text-muted-foreground/70 mb-12 max-w-xl mx-auto">
