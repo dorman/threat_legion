@@ -126,6 +126,29 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
+              {/* Product Hunt badge */}
+              <div className="flex justify-center mb-6">
+                <a
+                  href="https://www.producthunt.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl border border-[#DA552F]/30 bg-[#DA552F]/5 hover:bg-[#DA552F]/10 hover:border-[#DA552F]/50 transition-all group"
+                >
+                  <svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                    <rect width="40" height="40" rx="8" fill="#DA552F"/>
+                    <path d="M22.5 20c0 1.38-1.12 2.5-2.5 2.5h-3.75v-5H20c1.38 0 2.5 1.12 2.5 2.5z" fill="white"/>
+                    <path fillRule="evenodd" clipRule="evenodd" d="M20 11.25C15.17 11.25 11.25 15.17 11.25 20S15.17 28.75 20 28.75 28.75 24.83 28.75 20 24.83 11.25 20 11.25zm-6.25 8.75V15h6.25a5 5 0 010 10H16.25v-5z" fill="white"/>
+                  </svg>
+                  <div className="text-left">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mb-0.5">Featured on</p>
+                    <p className="text-sm font-bold text-[#DA552F] leading-none">Product Hunt</p>
+                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#DA552F]/50 group-hover:text-[#DA552F] transition-colors ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 17L17 7M17 7H7M17 7v10"/>
+                  </svg>
+                </a>
+              </div>
+
               {submitState === "success" ? (
                 <div className="max-w-md mx-auto rounded-2xl border border-primary/30 bg-primary/10 p-8 text-center">
                   <CheckCircle2 className="w-12 h-12 text-primary mx-auto mb-4" />
