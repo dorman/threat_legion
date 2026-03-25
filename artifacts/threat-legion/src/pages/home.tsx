@@ -1,18 +1,42 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Search, Code, Zap, ArrowRight, Activity } from "lucide-react";
+import { Shield, Zap, Code, Search, ArrowRight, CheckCircle2, Loader2, Lock, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { PromoVideo } from "@/components/PromoVideo";
+
+type SubmitState = "idle" | "loading" | "success" | "error";
+
+const FEATURES = [
+  {
+    icon: <Search className="w-6 h-6 text-primary" />,
+    title: "Deep Context Analysis",
+    desc: "Goes beyond regex matching. The agent understands control flow and business logic to surface complex, real-world vulnerabilities.",
+  },
+  {
+    icon: <Code className="w-6 h-6 text-primary" />,
+    title: "Actionable Remediation",
+    desc: "Don't just get alerts — receive specific code snippets and step-by-step instructions on how to patch every flaw found.",
+  },
+  {
+    icon: <Zap className="w-6 h-6 text-primary" />,
+    title: "Real-time Operations",
+    desc: "Watch the AI agent work live as it clones, reads, and analyses your codebase file by file with full SSE streaming.",
+  },
+];
 
 export default function Home() {
   const { data: user, isLoading } = useGetMe({
-    query: { queryKey: getGetMeQueryKey(), retry: false }
+    query: { queryKey: getGetMeQueryKey(), retry: false },
   });
   const [, setLocation] = useLocation();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [submitState, setSubmitState] = useState<SubmitState>("idle");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -20,108 +44,166 @@ export default function Home() {
     }
   }, [isLoading, user, setLocation]);
 
-  if (!isLoading && user) {
-    return null;
-  }
+  if (!isLoading && user) return null;
+
+  const handleWaitlist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSubmitState("loading");
+    setMessage("");
+
+    try {
+      const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const res = await fetch(`${base}/api/waitlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
+      });
+      const data = (await res.json()) as { message?: string; error?: string };
+      if (res.ok) {
+        setSubmitState("success");
+        setMessage(data.message ?? "You're on the list!");
+      } else {
+        setSubmitState("error");
+        setMessage(data.error ?? "Something went wrong. Please try again.");
+      }
+    } catch {
+      setSubmitState("error");
+      setMessage("Network error. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1 relative overflow-hidden">
-        {/* Background Image & Effects */}
+        {/* Background */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-background/80 z-10" /> {/* Dark Wash */}
+          <div className="absolute inset-0 bg-background/80 z-10" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/90 to-background z-10" />
-          <img 
-            src={`${import.meta.env.BASE_URL}images/hero-bg.png`} 
-            alt="Cyber aesthetic background" 
+          <img
+            src={`${import.meta.env.BASE_URL}images/hero-bg.png`}
+            alt=""
             className="w-full h-full object-cover opacity-50 mix-blend-screen"
           />
         </div>
 
-        <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
-          <div className="max-w-4xl mx-auto text-center">
+        {/* Hero */}
+        <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24">
+          <div className="max-w-3xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8">
-                <Activity className="w-4 h-4 animate-pulse-fast" />
-                <span>AI-Powered Security Operations</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8">
+                <Activity className="w-4 h-4 animate-pulse" />
+                <span>Early Access — Join the Waitlist</span>
               </div>
-              
+
               <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
-                Agentic <span className="text-primary text-glow">Vulnerability Scanner</span>
+                Agentic{" "}
+                <span className="text-primary text-glow">Vulnerability</span>
+                <br />
+                Scanner
               </h1>
-              
-              <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-                Threat Legion autonomously reads, searches, and analyzes your GitHub repositories 
-                to identify security vulnerabilities before they hit production. 
-                Powered by Claude AI.
+
+              <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto leading-relaxed">
+                Threat Legion autonomously scans your GitHub repositories for security vulnerabilities
+                — with real-time AI reasoning, severity ranking, and code-level remediation.
+              </p>
+              <p className="text-sm text-muted-foreground/70 mb-12 max-w-xl mx-auto">
+                We're putting the finishing touches on the platform. Drop your email below
+                and we'll notify you the moment early access opens.
               </p>
             </motion.div>
 
+            {/* Waitlist Form */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
-              <Button asChild size="lg" className="h-14 px-8 text-lg w-full sm:w-auto font-semibold">
-                <a href="/api/auth/login">
-                  Sign in with Replit to Start
+              {submitState === "success" ? (
+                <div className="max-w-md mx-auto rounded-2xl border border-primary/30 bg-primary/10 p-8 text-center">
+                  <CheckCircle2 className="w-12 h-12 text-primary mx-auto mb-4" />
+                  <h3 className="text-xl font-bold mb-2">You're on the list!</h3>
+                  <p className="text-muted-foreground text-sm">{message}</p>
+                </div>
+              ) : (
+                <form
+                  onSubmit={handleWaitlist}
+                  className="max-w-md mx-auto bg-card/60 backdrop-blur border border-white/10 rounded-2xl p-6 shadow-2xl space-y-4"
+                >
+                  <h2 className="text-lg font-semibold text-left">Get early access</h2>
+
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Your name (optional)"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full h-11 px-4 rounded-lg bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      disabled={submitState === "loading"}
+                    />
+                    <input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full h-11 px-4 rounded-lg bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      disabled={submitState === "loading"}
+                    />
+                  </div>
+
+                  {submitState === "error" && (
+                    <p className="text-sm text-destructive text-left">{message}</p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={submitState === "loading" || !email.trim()}
+                    className="w-full h-11 font-semibold"
+                  >
+                    {submitState === "loading" ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Joining...</>
+                    ) : (
+                      <>Join the Waitlist <ArrowRight className="ml-2 w-4 h-4" /></>
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-muted-foreground/60 flex items-center justify-center gap-1.5">
+                    <Lock className="w-3 h-3" />
+                    No spam. Unsubscribe anytime. Early access users get lifetime discounts.
+                  </p>
+                </form>
+              )}
+
+              <p className="mt-6 text-sm text-muted-foreground">
+                Already have access?{" "}
+                <a href="/api/auth/login" className="text-primary hover:underline font-medium">
+                  Sign in with Replit
                 </a>
-              </Button>
-              <Button asChild variant="glass" size="lg" className="h-14 px-8 text-lg w-full sm:w-auto">
-                <a href="#features">
-                  Learn More <ArrowRight className="ml-2 w-5 h-5" />
-                </a>
-              </Button>
+              </p>
             </motion.div>
           </div>
         </div>
 
-        {/* Video Section */}
-        <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pb-32">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            <PromoVideo />
-          </motion.div>
-        </div>
-
         {/* Features Section */}
-        <div id="features" className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 py-24 border-t border-white/5 bg-background">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Autonomous Threat Detection</h2>
+        <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pb-24 border-t border-white/5 pt-24">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">How it works</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our multi-agent system doesn't just run static rules. It actively reads your code, follows execution paths, and understands context.
+              A multi-agent AI system that doesn't just run static rules — it actively reads your
+              code, follows execution paths, and understands context.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Search className="w-8 h-8 text-primary" />,
-                title: "Deep Context Analysis",
-                desc: "Goes beyond regex matching. The agent understands control flow and business logic to find complex vulnerabilities."
-              },
-              {
-                icon: <Code className="w-8 h-8 text-primary" />,
-                title: "Actionable Remediation",
-                desc: "Don't just get alerts. Receive specific code snippets and step-by-step instructions on how to patch the flaws."
-              },
-              {
-                icon: <Zap className="w-8 h-8 text-primary" />,
-                title: "Real-time Operations",
-                desc: "Watch the AI agent work in real-time as it clones, reads, and analyzes your codebase file by file."
-              }
-            ].map((feature, i) => (
-              <motion.div 
+            {FEATURES.map((feature, i) => (
+              <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -129,18 +211,30 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 className="bg-card/50 border border-white/5 rounded-2xl p-8 hover:bg-card hover:border-primary/30 transition-all duration-300"
               >
-                <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {feature.desc}
-                </p>
+                <h3 className="text-lg font-semibold mb-3">{feature.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
+
+        {/* Social Proof / Trust Strip */}
+        <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+          <div className="rounded-2xl border border-white/5 bg-card/30 p-8 text-center max-w-2xl mx-auto">
+            <Shield className="w-10 h-10 text-primary mx-auto mb-4" />
+            <h3 className="text-xl font-bold mb-2">Built with privacy in mind</h3>
+            <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+              Threat Legion only scans <strong>public repositories</strong>. Your private source code
+              is never sent to any external AI service. AI analysis uses Claude AI (Anthropic) — which
+              does not train on API data by default.
+            </p>
+          </div>
+        </div>
       </main>
+
       <Footer />
     </div>
   );
