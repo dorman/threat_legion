@@ -12,8 +12,8 @@ type SubmitState = "idle" | "loading" | "success" | "error";
 const FEATURES = [
   {
     icon: <Search className="w-6 h-6 text-primary" />,
-    title: "Deep Context Analysis",
-    desc: "Goes beyond regex matching. The agent understands control flow and business logic to surface complex, real-world vulnerabilities.",
+    title: "Five Specialist Agents",
+    desc: "A coordinator AI routes each file to the right expert: auth, injection, secrets, dependency, and general security agents — each with domain-specific reasoning.",
   },
   {
     icon: <Code className="w-6 h-6 text-primary" />,
@@ -22,8 +22,8 @@ const FEATURES = [
   },
   {
     icon: <Zap className="w-6 h-6 text-primary" />,
-    title: "Real-time Operations",
-    desc: "Watch the AI agent work live as it clones, reads, and analyses your codebase file by file with full SSE streaming.",
+    title: "Real-time Parallel Streaming",
+    desc: "Specialists run in parallel and stream findings the moment they're discovered — not after everything finishes. Watch multiple agents work simultaneously.",
   },
 ];
 

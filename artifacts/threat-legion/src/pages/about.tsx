@@ -91,10 +91,12 @@ export default function About() {
                   dedicated security team to interpret.
                 </p>
                 <p>
-                  ThreatLegion changes that. Our multi-agent AI system reads your codebase the way a
-                  security engineer would — following data flows, understanding context, and reasoning
-                  about your actual business logic — then surfaces findings with the severity ratings
-                  and fix instructions you need to act immediately.
+                  ThreatLegion changes that. A coordinator AI reads your file tree and routes every
+                  file to one of five specialist agents — each focused on a specific threat class:
+                  authentication flaws, injection vulnerabilities, hardcoded secrets, dependency risks,
+                  and general security issues. The specialists run in parallel, reporting findings as
+                  they're discovered. A synthesizer agent then produces a calibrated score and
+                  executive summary across all results.
                 </p>
                 <p>
                   We scan only <strong className="text-foreground">public repositories</strong> by
@@ -151,22 +153,27 @@ export default function About() {
                   {
                     step: "01",
                     title: "Authenticate & submit",
-                    desc: "Sign in with Replit, paste any public GitHub repository URL, and ThreatLegion verifies you have authorisation before touching a single file.",
+                    desc: "Sign in with Replit, paste any public GitHub repository URL, and ThreatLegion verifies authorisation before touching a single file.",
                   },
                   {
                     step: "02",
-                    title: "Multi-agent analysis",
-                    desc: "An AI agent autonomously fetches the file tree, selects high-risk files, and reads their content — reasoning about data flows, auth patterns, and dependency chains.",
+                    title: "Coordinator agent classifies the codebase",
+                    desc: "A dedicated coordinator AI reads the full file tree and assigns every file to exactly one specialist domain: authentication, injection, secrets, dependencies, or general security.",
                   },
                   {
                     step: "03",
-                    title: "Real-time findings stream",
-                    desc: "Vulnerabilities surface via live SSE streaming as soon as the agent finds them. Critical and high-severity issues appear first.",
+                    title: "Five specialist agents scan in parallel",
+                    desc: "Each specialist runs its own independent agentic loop — reading files, searching for patterns, and reasoning within its domain. Up to three agents run simultaneously, so large repos finish faster.",
                   },
                   {
                     step: "04",
-                    title: "Remediation guidance",
-                    desc: "Each finding includes the exact file, line numbers, a description of the risk, and concrete steps to fix it — not just a severity badge.",
+                    title: "Findings stream in real time",
+                    desc: "As each agent discovers a vulnerability it reports it immediately via live streaming — you see results from all agents as they happen, not after everything finishes.",
+                  },
+                  {
+                    step: "05",
+                    title: "Synthesizer produces the final report",
+                    desc: "A final synthesizer agent reviews all findings across all specialists, calibrates the security score, and writes an executive summary highlighting the most critical priorities.",
                   },
                 ].map((item, i) => (
                   <div key={i} className="flex gap-5">
