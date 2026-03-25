@@ -42,7 +42,8 @@ export default function Home() {
     if (!isLoading && user) {
       setLocation("/dashboard");
     }
-  }, [isLoading, user, setLocation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, user]);
 
   if (!isLoading && user) return null;
 

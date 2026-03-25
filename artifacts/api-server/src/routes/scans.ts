@@ -1,10 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, scansTable, findingsTable, usersTable } from "@workspace/db";
+import { db, scansTable, findingsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
-import { parseRepoUrl, verifyRepoOwnership, getConnectorGithubUsername, checkRepoVisibility } from "../lib/github";
+import { parseRepoUrl, checkRepoVisibility } from "../lib/github";
 import { runScan, type ScanEvent } from "../lib/scan-engine";
 import { publishScanEvent, subscribeScan } from "../lib/scan-bus";
-import { getSessionId, getSession, updateSession } from "../lib/auth";
+import { getSessionId } from "../lib/auth";
 import type { User } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -96,53 +96,6 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
   if (visibility === "not_found") {
     res.status(404).json({
       error: "Repository not found. Please check the URL and ensure the repository exists.",
-    });
-    return;
-  }
-
-  let githubUsername = user.githubUsername;
-
-  const liveUsername = await getConnectorGithubUsername();
-  if (liveUsername) {
-    githubUsername = liveUsername;
-    if (liveUsername !== user.githubUsername) {
-      try {
-        await db
-          .update(usersTable)
-          .set({ githubUsername: liveUsername, updatedAt: new Date() })
-          .where(eq(usersTable.id, user.id));
-
-        const sid = getSessionId(req);
-        if (sid) {
-          const session = await getSession(sid);
-          if (session) {
-            session.user = { ...session.user, githubUsername: liveUsername };
-            await updateSession(sid, session);
-          }
-        }
-      } catch (err) {
-        req.log.warn({ err }, "Failed to persist refreshed githubUsername");
-      }
-    }
-  }
-
-  if (!githubUsername) {
-    res.status(403).json({
-      error:
-        "GitHub is not connected. Please connect your GitHub account to Replit and try again.",
-    });
-    return;
-  }
-
-  const isAuthorized = await verifyRepoOwnership(
-    parsed.owner,
-    parsed.repo,
-    githubUsername
-  );
-  if (!isAuthorized) {
-    res.status(403).json({
-      error:
-        "You can only scan repositories you own or collaborate on. Ensure your GitHub account has access to this repository.",
     });
     return;
   }
