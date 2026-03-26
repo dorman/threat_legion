@@ -18,6 +18,22 @@ import type { CreateScanMutationError } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getScoreColor, cn } from "@/lib/utils";
 
+import { useDebouncer } from '@tanstack/pacer/react'
+
+// inside Dashboard():
+const [repoUrlError, setRepoUrlError] = useState("")
+
+const debouncedValidate = useDebouncer(
+  (url: string) => {
+    if (url && !url.includes("github.com")) {
+      setRepoUrlError("Only Github repos are allowed currently")
+    } else {
+      setRepoUrlError("")
+    }
+  },
+  {wait: 400}
+)
+
 const AI_PROVIDERS = [
   { value: "anthropic", label: "Anthropic (Claude)" },
   { value: "openai",    label: "OpenAI (GPT-4)" },
