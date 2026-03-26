@@ -19,6 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getScoreColor, cn } from "@/lib/utils";
 
 import { useDebouncer } from '@tanstack/pacer/react'
+import { useThrottler } from '@tantask/pacer/react'
 
 // inside Dashboard():
 const [repoUrlError, setRepoUrlError] = useState("")
@@ -33,6 +34,21 @@ const debouncedValidate = useDebouncer(
   },
   {wait: 400}
 )
+
+// in the input onChange:
+onChange={(e) => {
+  setRepoUrlError(e.target.value)
+  setErrorStr("")
+  debouncedValidate.maybeExecute(e.target.value)
+}}
+
+const throttledCreateScan = useThrottler(
+  (url: string) => createScan({ data: { repoUrl: url } }),
+  { wait:3000, leading: true, trailing :false }
+)
+
+//. replace createScan({ data: { repoUrl } }) in handleScanSubmit:
+throttledCreateScan.maybeExecute(repoUrl)
 
 const AI_PROVIDERS = [
   { value: "anthropic", label: "Anthropic (Claude)" },
