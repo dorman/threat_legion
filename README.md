@@ -2,12 +2,11 @@
 
 **An agentic, open-source vulnerability scanner for GitHub repositories — powered by your own AI API key.**
 
+![Threat Legion Dashboard](_Intro_Project_Screenshot.png)
+
 Threat Legion uses a multi-agent AI architecture to analyze public GitHub repositories for security vulnerabilities in real time. Five specialized agents run in parallel — each focused on a distinct attack surface — and stream findings to your screen as they are discovered.
 
 No per-scan fees. Bring your own key from Anthropic, OpenAI, DeepSeek, or Groq.
-
-![Threat Legion Dashboard](_Intro_Project_Screenshot.png)
-
 ---
 
 ## Features
