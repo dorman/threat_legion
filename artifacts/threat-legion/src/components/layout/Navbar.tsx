@@ -1,9 +1,11 @@
 import { Link } from "wouter";
-import { LogOut, Loader2, LayoutDashboard, User, Crown } from "lucide-react";
+import { LogOut, Loader2, LayoutDashboard, User, Github } from "lucide-react";
 import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
 import { useGetMe, useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+
+const GITHUB_REPO = "https://github.com/threatlegion/threat-legion";
 
 export function Navbar() {
   const { data: user, isLoading } = useGetMe({
@@ -48,10 +50,15 @@ export function Navbar() {
                   <LayoutDashboard className="h-4 w-4" />
                   Dashboard
                 </Link>
-                <Link href="/pricing" className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <Crown className="h-4 w-4" />
-                  Pricing
-                </Link>
+                <a
+                  href={GITHUB_REPO}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Github className="h-4 w-4" />
+                  GitHub
+                </a>
                 <div className="h-4 w-px bg-border hidden sm:block" />
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium hidden sm:block">{displayName}</span>
@@ -76,9 +83,15 @@ export function Navbar() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Pricing
-                </Link>
+                <a
+                  href={GITHUB_REPO}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Github className="h-4 w-4" />
+                  <span className="hidden sm:inline">GitHub</span>
+                </a>
                 <Button asChild variant="default" className="font-semibold">
                   <a href="/api/auth/login">
                     Sign in with Replit

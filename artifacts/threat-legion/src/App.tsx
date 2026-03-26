@@ -4,9 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import Home from "@/pages/home";
-import About from "@/pages/about";
 import Dashboard from "@/pages/dashboard";
-import Pricing from "@/pages/pricing";
 import Terms from "@/pages/terms";
 import Privacy from "@/pages/privacy";
 import SecurityNotice from "@/pages/security";
@@ -27,8 +25,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/about" component={About} />
-      <Route path="/pricing" component={Pricing} />
       <Route path="/terms" component={Terms} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/security" component={SecurityNotice} />
