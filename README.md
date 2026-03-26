@@ -37,6 +37,7 @@ No per-scan fees. Bring your own key from Anthropic, OpenAI, DeepSeek, or Groq.
 | Recharts | 2.15 | Data visualization |
 | Sonner | 2.0 | Toast notifications |
 | Lucide React | 0.545 | Icons |
+| Tanstack Pacer | 0.20.0 | Debouncer and Throttling |
 
 ### Backend
 | Technology | Version | Purpose |
