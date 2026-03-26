@@ -10,7 +10,6 @@ import { format } from "date-fns";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { DisclaimerModal } from "@/components/ui/DisclaimerModal";
 import {
   useGetMe, useListScans, useCreateScan, useDeleteScan, useSaveAiSettings,
   getGetMeQueryKey, getListScansQueryKey,
@@ -71,12 +70,12 @@ export default function Dashboard() {
   const [showKey, setShowKey] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
-  const { data: user, isLoading: isUserLoading, isError: isUserError } = useGetMe({
+  const { data: user, isLoading: isUserLoading } = useGetMe({
     query: { queryKey: getGetMeQueryKey(), retry: false }
   });
 
   const { data: scans, isLoading: isScansLoading } = useListScans({
-    query: { queryKey: getListScansQueryKey(), enabled: !!user }
+    query: { queryKey: getListScansQueryKey() }
   });
 
   const { mutate: createScan, isPending: isCreating } = useCreateScan({
@@ -129,12 +128,6 @@ export default function Dashboard() {
   }, [selectedProvider]);
 
   useEffect(() => {
-    if (!isUserLoading && isUserError) {
-      setLocation("/");
-    }
-  }, [isUserLoading, isUserError, setLocation]);
-
-  useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     const parsed = parseGithubUrl(repoUrl);
@@ -170,10 +163,7 @@ export default function Dashboard() {
     );
   }
 
-  if (!user) return null;
-
-  const hasAcceptedDisclaimer = !!user.acceptedDisclaimerAt;
-  const hasApiKey = user.hasApiKey;
+  const hasApiKey = user?.hasApiKey ?? false;
 
   const handleScanSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,7 +203,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {!hasAcceptedDisclaimer && <DisclaimerModal onAccepted={() => {}} />}
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -326,7 +315,7 @@ export default function Dashboard() {
                   <span className="font-medium">AI Provider Settings</span>
                   {hasApiKey && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-medium">
-                      {user.aiProvider ?? "configured"}
+                      {user?.aiProvider ?? "configured"}
                     </span>
                   )}
                 </div>
@@ -420,16 +409,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Warning cards */}
-            <div className="bg-secondary/50 rounded-xl p-5 border border-white/5">
-              <h3 className="font-medium mb-2 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-yellow-500" /> Authorization Required
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Threat Legion verifies you are an owner or collaborator of the target repository via your connected GitHub account.
-              </p>
-            </div>
-
+            {/* Warning card */}
             <div className="bg-secondary/30 rounded-xl p-5 border border-yellow-500/10">
               <h3 className="font-medium mb-2 flex items-center gap-2 text-yellow-400/80">
                 <Shield className="w-4 h-4" /> Scanner Limitation Notice

@@ -1,33 +1,10 @@
 import { Link } from "wouter";
-import { LogOut, Loader2, LayoutDashboard, User, Github } from "lucide-react";
+import { Github } from "lucide-react";
 import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
-import { useGetMe, useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
 
 const GITHUB_REPO = "https://github.com/threatlegion/threat-legion";
 
 export function Navbar() {
-  const { data: user, isLoading } = useGetMe({
-    query: { queryKey: getGetMeQueryKey(), retry: false, refetchOnWindowFocus: false }
-  });
-  
-  const queryClient = useQueryClient();
-  const { mutate: logout, isPending: isLoggingOut } = useLogout({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        window.location.href = "/";
-      }
-    }
-  });
-
-  const displayName = user ? (
-    user.firstName
-      ? `${user.firstName}${user.lastName ? " " + user.lastName : ""}`
-      : user.email ?? "User"
-  ) : null;
-
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,63 +19,18 @@ export function Navbar() {
           </Link>
 
           <div className="flex items-center gap-4">
-            {isLoading ? (
-              <div className="h-8 w-8 animate-pulse rounded-full bg-secondary" />
-            ) : user ? (
-              <div className="flex items-center gap-4">
-                <Link href="/dashboard" className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </Link>
-                <a
-                  href={GITHUB_REPO}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Github className="h-4 w-4" />
-                  GitHub
-                </a>
-                <div className="h-4 w-px bg-border hidden sm:block" />
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium hidden sm:block">{displayName}</span>
-                  {user.profileImageUrl ? (
-                    <img src={user.profileImageUrl} alt={displayName ?? "User"} className="h-8 w-8 rounded-full border border-border" />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground font-bold">
-                      <User className="h-4 w-4" />
-                    </div>
-                  )}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => logout()}
-                    disabled={isLoggingOut}
-                    className="text-muted-foreground hover:text-destructive"
-                    title="Log out"
-                  >
-                    {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <a
-                  href={GITHUB_REPO}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Github className="h-4 w-4" />
-                  <span className="hidden sm:inline">GitHub</span>
-                </a>
-                <Button asChild variant="default" className="font-semibold">
-                  <a href="/api/auth/login">
-                    Sign in with Replit
-                  </a>
-                </Button>
-              </div>
-            )}
+            <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Dashboard
+            </Link>
+            <a
+              href={GITHUB_REPO}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Github className="h-4 w-4" />
+              <span className="hidden sm:inline">GitHub</span>
+            </a>
           </div>
         </div>
       </div>

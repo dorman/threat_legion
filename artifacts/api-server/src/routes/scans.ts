@@ -1,43 +1,15 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, scansTable, findingsTable, usersTable } from "@workspace/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { parseRepoUrl, checkRepoVisibility } from "../lib/github";
 import { runScan, type ScanEvent } from "../lib/scan-engine";
 import { publishScanEvent, subscribeScan } from "../lib/scan-bus";
-import { getSessionId } from "../lib/auth";
-import type { User } from "@workspace/api-zod";
+import { SYSTEM_USER_ID, getOrCreateSystemUser } from "./auth";
 import type { LLMConfig } from "../lib/ai-provider";
 
 const router: IRouter = Router();
 
 const activeScanIds = new Set<number>();
-
-/**
- * The workspace GitHub connector is tied to a single GitHub account belonging
- * to the Replit workspace owner. We enforce that only that owner can initiate
- * scans, ensuring the GitHub identity used for ownership verification matches
- * the authenticated user making the request.
- */
-const WORKSPACE_OWNER_ID = process.env["REPL_OWNER_ID"] ?? "";
-
-function requireAuth(req: Request, res: Response): User | null {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Not authenticated" });
-    return null;
-  }
-  return req.user as User;
-}
-
-function requireWorkspaceOwner(user: User, res: Response): boolean {
-  if (!WORKSPACE_OWNER_ID || user.id !== WORKSPACE_OWNER_ID) {
-    res.status(403).json({
-      error:
-        "Scan access is restricted to the workspace owner. The GitHub connector used for repository verification is tied to a single account.",
-    });
-    return false;
-  }
-  return true;
-}
 
 function getParamId(req: Request): number | null {
   const raw = req.params["id"];
@@ -47,14 +19,10 @@ function getParamId(req: Request): number | null {
 }
 
 router.get("/scans", async (req: Request, res: Response) => {
-  const user = requireAuth(req, res);
-  if (!user) return;
-
   try {
     const scans = await db
       .select()
       .from(scansTable)
-      .where(eq(scansTable.userId, user.id))
       .orderBy(desc(scansTable.createdAt));
 
     res.json(scans);
@@ -65,11 +33,6 @@ router.get("/scans", async (req: Request, res: Response) => {
 });
 
 router.post("/scans", async (req: Request, res: Response): Promise<void> => {
-  const user = requireAuth(req, res);
-  if (!user) return;
-
-  if (!requireWorkspaceOwner(user, res)) return;
-
   const { repoUrl } = req.body as { repoUrl?: string };
 
   if (!repoUrl) {
@@ -89,7 +52,7 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
   if (visibility === "private") {
     res.status(403).json({
       error:
-        "Private repositories cannot be scanned. ThreatLegion uses a third-party AI provider (Claude AI by Anthropic) to analyse code. To protect your privacy, we only permit scanning of public repositories so that no private source code is ever sent to an external AI service.",
+        "Private repositories cannot be scanned. To protect your privacy, only public repositories are permitted so that no private source code is ever sent to an external AI service.",
       code: "PRIVATE_REPO",
     });
     return;
@@ -101,10 +64,12 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const systemUser = await getOrCreateSystemUser();
+
   const [dbUser] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.id, user.id))
+    .where(eq(usersTable.id, SYSTEM_USER_ID))
     .limit(1);
 
   if (!dbUser?.aiApiKey || !dbUser?.aiProvider) {
@@ -125,7 +90,7 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
   const [scan] = await db
     .insert(scansTable)
     .values({
-      userId: user.id,
+      userId: SYSTEM_USER_ID,
       repoUrl: repoUrl.replace(/\.git$/, ""),
       repoOwner: parsed.owner,
       repoName: parsed.repo,
@@ -147,9 +112,6 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
 });
 
 router.get("/scans/:id", async (req: Request, res: Response): Promise<void> => {
-  const user = requireAuth(req, res);
-  if (!user) return;
-
   const scanId = getParamId(req);
   if (scanId === null) {
     res.status(400).json({ error: "Invalid scan ID" });
@@ -159,7 +121,7 @@ router.get("/scans/:id", async (req: Request, res: Response): Promise<void> => {
   const [scan] = await db
     .select()
     .from(scansTable)
-    .where(and(eq(scansTable.id, scanId), eq(scansTable.userId, user.id)))
+    .where(eq(scansTable.id, scanId))
     .limit(1);
 
   if (!scan) {
@@ -173,31 +135,10 @@ router.get("/scans/:id", async (req: Request, res: Response): Promise<void> => {
     .where(eq(findingsTable.scanId, scanId))
     .orderBy(findingsTable.severity);
 
-  const userTier = (user as User & { tier?: string }).tier ?? "free";
-  const filteredFindings = findings.map((f) => {
-    if (userTier === "paid") return f;
-    if (f.severity === "critical" || f.severity === "high") {
-      return {
-        ...f,
-        description: "Upgrade to the Pro plan to view this finding.",
-        remediation: "Upgrade to the Pro plan to view remediation details.",
-        codeSnippet: null,
-        filePath: null,
-        lineStart: null,
-        lineEnd: null,
-        locked: true,
-      };
-    }
-    return f;
-  });
-
-  res.json({ ...scan, findings: filteredFindings });
+  res.json({ ...scan, findings });
 });
 
 router.delete("/scans/:id", async (req: Request, res: Response): Promise<void> => {
-  const user = requireAuth(req, res);
-  if (!user) return;
-
   const scanId = getParamId(req);
   if (scanId === null) {
     res.status(400).json({ error: "Invalid scan ID" });
@@ -207,7 +148,7 @@ router.delete("/scans/:id", async (req: Request, res: Response): Promise<void> =
   const [scan] = await db
     .select()
     .from(scansTable)
-    .where(and(eq(scansTable.id, scanId), eq(scansTable.userId, user.id)))
+    .where(eq(scansTable.id, scanId))
     .limit(1);
 
   if (!scan) {
@@ -220,9 +161,6 @@ router.delete("/scans/:id", async (req: Request, res: Response): Promise<void> =
 });
 
 router.get("/scans/:id/stream", async (req: Request, res: Response): Promise<void> => {
-  const user = requireAuth(req, res);
-  if (!user) return;
-
   const scanId = getParamId(req);
   if (scanId === null) {
     res.status(400).json({ error: "Invalid scan ID" });
@@ -232,7 +170,7 @@ router.get("/scans/:id/stream", async (req: Request, res: Response): Promise<voi
   const [scan] = await db
     .select()
     .from(scansTable)
-    .where(and(eq(scansTable.id, scanId), eq(scansTable.userId, user.id)))
+    .where(eq(scansTable.id, scanId))
     .limit(1);
 
   if (!scan) {

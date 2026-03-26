@@ -1,10 +1,7 @@
-import { useEffect } from "react";
-import { useLocation } from "wouter";
 import {
   Shield, Zap, Code, Search, Key, Users, LineChart, Github, ArrowRight, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -49,20 +46,6 @@ const BYOK_CARDS = [
 ];
 
 export default function Home() {
-  const { data: user, isLoading } = useGetMe({
-    query: { queryKey: getGetMeQueryKey(), retry: false },
-  });
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!isLoading && user) {
-      setLocation("/dashboard");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, user]);
-
-  if (!isLoading && user) return null;
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -113,8 +96,8 @@ export default function Home() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Button asChild size="lg" className="font-semibold h-12 px-8">
-                <a href="/api/auth/login">
-                  Sign in with Replit <ArrowRight className="ml-2 w-4 h-4" />
+                <a href="/dashboard">
+                  Open Dashboard <ArrowRight className="ml-2 w-4 h-4" />
                 </a>
               </Button>
               <Button asChild size="lg" variant="outline" className="font-semibold h-12 px-8 border-white/10 hover:border-white/20">

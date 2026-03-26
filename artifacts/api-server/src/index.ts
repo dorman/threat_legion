@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { db } from "@workspace/db";
 import { scansTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
+import { getOrCreateSystemUser } from "./routes/auth";
 
 const rawPort = process.env["PORT"];
 
@@ -19,6 +20,9 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 async function start() {
+  await getOrCreateSystemUser();
+  logger.info("System user initialized");
+
   const orphaned = await db
     .update(scansTable)
     .set({ status: "failed", completedAt: new Date() })
