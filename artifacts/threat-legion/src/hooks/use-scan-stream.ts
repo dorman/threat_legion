@@ -37,9 +37,9 @@ export function useScanStream(scanId: number | undefined) {
       setStatus("running");
     };
 
-    es.onmessage = (event) => {
+    es.onmessage = (e) => {
       try {
-        const data = JSON.parse(event.data) as StreamEvent;
+        const data = JSON.parse(e.data) as StreamEvent;
         
         switch (data.type) {
           case "log":

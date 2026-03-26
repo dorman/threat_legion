@@ -5,6 +5,17 @@ import { Navbar } from "@/components/layout/Navbar";
 import { useScanStream } from "@/hooks/use-scan-stream";
 import { useGetScan, getGetScanQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
+import {useRateLimiter} from '@tanstack/pacer/react'
+
+const rateLimitedAddFinding = useRateLimiter(
+  (finding: Finding) => setFindings(prev => [...prev, finding]),
+  { limit: 5, window:1000 }
+)
+
+// in your SSE onmessage handler, replace direct setState:
+if (e.type === 'finding') {
+  rateLimitedAddFinding.maybeExecute(e.finding)
+}
 
 export default function ScanProgress() {
   const [, params] = useRoute("/scans/:id/progress");

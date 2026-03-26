@@ -19,7 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getScoreColor, cn } from "@/lib/utils";
 
 import { useDebouncer } from '@tanstack/pacer/react'
-import { useThrottler } from '@tantask/pacer/react'
+import { useThrottler } from '@tanstack/pacer/react'
 
 // inside Dashboard():
 const [repoUrlError, setRepoUrlError] = useState("")
@@ -49,6 +49,9 @@ const throttledCreateScan = useThrottler(
 
 //. replace createScan({ data: { repoUrl } }) in handleScanSubmit:
 throttledCreateScan.maybeExecute(repoUrl)
+
+
+
 
 const AI_PROVIDERS = [
   { value: "anthropic", label: "Anthropic (Claude)" },
