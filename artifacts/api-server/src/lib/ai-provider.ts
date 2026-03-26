@@ -101,7 +101,7 @@ export async function callForcedTool<T>(
     tool_choice: { type: "function", function: { name: params.tool.name } },
   });
   const toolCall = response.choices[0]?.message?.tool_calls?.[0];
-  if (toolCall) {
+  if (toolCall && toolCall.type === "function") {
     return JSON.parse(toolCall.function.arguments) as T;
   }
   return null;
@@ -231,6 +231,7 @@ async function runOpenAIAgentLoop(
     if (toolCalls.length === 0) break;
 
     for (const tc of toolCalls) {
+      if (tc.type !== "function") continue;
       let input: unknown;
       try {
         input = JSON.parse(tc.function.arguments);

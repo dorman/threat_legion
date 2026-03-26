@@ -63,9 +63,11 @@ Express 5 API server for Threat Legion (Agentic Vulnerability Scanner). Routes l
   - Me: `GET /api/auth/me` → returns current user or 401
 - Scans: `src/routes/scans.ts` — CRUD scans + `GET /api/scans/:id/stream` (SSE). Free tier users get redacted high/critical findings.
 - Subscription: `src/routes/subscription.ts` — GET/POST tier management (free/paid)
-- Scan engine: `src/lib/scan-engine.ts` — multi-agent Claude AI loop using Anthropic AI integration
+- Scan engine: `src/lib/scan-engine.ts` — five-agent security scan orchestrator (coordinator, auth, injection, secrets, dependency, general). Accepts `LLMConfig` to use any supported provider.
+- AI provider abstraction: `src/lib/ai-provider.ts` — unified `callForcedTool` + `runAgentLoop` over Anthropic SDK and OpenAI-compatible SDK (OpenAI, DeepSeek, Groq). BYOK model: user's API key loaded from DB at scan time.
+- BYOK settings: `PUT /api/auth/ai-settings` — saves provider, API key (stored encrypted in DB, never returned), and optional model override. `GET /api/auth/me` returns `hasApiKey: boolean`, `aiProvider`, `aiModel` (not the key itself).
 - GitHub API: `src/lib/github.ts` — uses Replit GitHub Connector proxy (`@replit/connectors-sdk`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`, `@workspace/integrations-anthropic-ai`
+- Depends on: `@workspace/db`, `@workspace/api-zod`, `@anthropic-ai/sdk`, `openai`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server
 - `pnpm --filter @workspace/api-server run build` — production esbuild bundle
 
