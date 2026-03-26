@@ -22,7 +22,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-              Open-source agentic vulnerability scanner for public GitHub repositories.
+              Open-source agentic vulnerability scanner for GitHub repositories.
               Bring your own AI provider key — no subscriptions, no lock-in.
             </p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground/60">

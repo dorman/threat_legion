@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock,
-  ChevronRight, Loader2, Shield, Lock, Trash2, Key, Settings, Eye, EyeOff,
+  ChevronRight, Loader2, Shield, Trash2, Key, Settings, Eye, EyeOff,
   ChevronDown, ChevronUp,
 } from "lucide-react";
 import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
@@ -17,8 +17,6 @@ import {
 import type { CreateScanMutationError } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getScoreColor, cn } from "@/lib/utils";
-
-type RepoCheck = "idle" | "checking" | "public" | "private" | "not_found";
 
 const AI_PROVIDERS = [
   { value: "anthropic", label: "Anthropic (Claude)" },
@@ -42,25 +40,11 @@ const PROVIDER_KEY_HINTS: Record<ProviderValue, string> = {
   groq:      "gsk_...",
 };
 
-function parseGithubUrl(url: string): { owner: string; repo: string } | null {
-  try {
-    const u = new URL(url);
-    if (u.hostname !== "github.com") return null;
-    const parts = u.pathname.replace(/^\//, "").replace(/\.git$/, "").split("/");
-    if (parts.length < 2 || !parts[0] || !parts[1]) return null;
-    return { owner: parts[0], repo: parts[1] };
-  } catch {
-    return null;
-  }
-}
-
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [repoUrl, setRepoUrl] = useState("");
   const [errorStr, setErrorStr] = useState("");
-  const [repoCheck, setRepoCheck] = useState<RepoCheck>("idle");
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queryClient = useQueryClient();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -127,34 +111,6 @@ export default function Dashboard() {
     if (!model) setModel(DEFAULT_MODELS[selectedProvider]);
   }, [selectedProvider]);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    const parsed = parseGithubUrl(repoUrl);
-    if (!parsed) {
-      setRepoCheck("idle");
-      return;
-    }
-
-    setRepoCheck("checking");
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`,
-          { headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } }
-        );
-        if (res.status === 404) { setRepoCheck("private"); return; }
-        if (!res.ok) { setRepoCheck("not_found"); return; }
-        const data = (await res.json()) as { private?: boolean };
-        setRepoCheck(data.private ? "private" : "public");
-      } catch {
-        setRepoCheck("not_found");
-      }
-    }, 600);
-
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [repoUrl]);
-
   if (isUserLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -175,8 +131,6 @@ export default function Dashboard() {
     }
     if (!repoUrl.trim()) { setErrorStr("Please enter a valid GitHub URL"); return; }
     if (!repoUrl.includes("github.com")) { setErrorStr("Only GitHub repositories are supported currently"); return; }
-    if (repoCheck === "private") { setErrorStr("Private repositories cannot be scanned due to data privacy restrictions."); return; }
-    if (repoCheck === "checking") { setErrorStr("Please wait while we verify the repository..."); return; }
     createScan({ data: { repoUrl } });
   };
 
@@ -219,7 +173,7 @@ export default function Dashboard() {
                 New Security Scan
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Enter a public GitHub repository URL to begin an autonomous multi-agent vulnerability assessment.
+                Enter a GitHub repository URL to begin an autonomous multi-agent vulnerability assessment.
               </p>
 
               {!hasApiKey && (
@@ -248,38 +202,12 @@ export default function Dashboard() {
                       value={repoUrl}
                       onChange={(e) => { setRepoUrl(e.target.value); setErrorStr(""); }}
                       className={cn(
-                        "w-full h-11 pl-10 pr-10 rounded-lg bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono text-sm",
-                        (errorStr || repoCheck === "private") && "border-destructive focus:border-destructive focus:ring-destructive/20",
-                        repoCheck === "public" && "border-green-500/60 focus:border-green-500 focus:ring-green-500/20"
+                        "w-full h-11 pl-10 pr-4 rounded-lg bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono text-sm",
+                        errorStr && "border-destructive focus:border-destructive focus:ring-destructive/20"
                       )}
                       disabled={isCreating}
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      {repoCheck === "checking" && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                      {repoCheck === "public" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                      {repoCheck === "private" && <Lock className="w-4 h-4 text-destructive" />}
-                    </div>
                   </div>
-
-                  {repoCheck === "private" && (
-                    <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 mt-2">
-                      <div className="flex items-start gap-2">
-                        <Lock className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                        <div>
-                          <p className="text-sm font-semibold text-destructive">Private repository — cannot scan</p>
-                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                            Your API key is sent directly to your chosen AI provider. Only <strong>public repositories</strong> are permitted to prevent private source code from being sent to external AI services.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {repoCheck === "public" && !errorStr && (
-                    <p className="text-xs text-green-500 flex items-center gap-1 mt-1">
-                      <CheckCircle2 className="w-3 h-3" /> Public repository confirmed — safe to scan
-                    </p>
-                  )}
 
                   {errorStr && (
                     <p className="text-sm text-destructive flex items-center gap-1 mt-1">
@@ -290,13 +218,11 @@ export default function Dashboard() {
 
                 <Button
                   type="submit"
-                  disabled={isCreating || repoCheck === "private" || repoCheck === "checking"}
+                  disabled={isCreating}
                   className="w-full h-11 font-semibold"
                 >
                   {isCreating ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing Agents...</>
-                  ) : repoCheck === "checking" ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Checking Repository...</>
                   ) : (
                     <><Search className="w-4 h-4 mr-2" /> Start Autonomous Scan</>
                   )}

@@ -83,7 +83,7 @@ export default function Home() {
               </h1>
 
               <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-                A multi-agent AI system that scans your <strong>public GitHub repositories</strong> for
+                A multi-agent AI system that scans your <strong>GitHub repositories</strong> for
                 security vulnerabilities — with real-time reasoning, severity ranking, and code-level remediation.
                 Bring your own API key.
               </p>
@@ -186,8 +186,7 @@ export default function Home() {
             <h3 className="text-xl font-bold mb-2">Free and open source</h3>
             <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">
               Threat Legion is MIT-licensed and fully open source. Read the code, fork it, self-host it,
-              or contribute. Only <strong>public repositories</strong> are scanned — your private code
-              is never sent anywhere.
+              or contribute. Your AI provider key goes directly to the provider — Threat Legion never stores it in plaintext.
             </p>
             <a
               href={GITHUB_REPO}

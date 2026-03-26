@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, scansTable, findingsTable, usersTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { parseRepoUrl, checkRepoVisibility } from "../lib/github";
+import { parseRepoUrl } from "../lib/github";
 import { runScan, type ScanEvent } from "../lib/scan-engine";
 import { publishScanEvent, subscribeScan } from "../lib/scan-bus";
 import { SYSTEM_USER_ID, getOrCreateSystemUser } from "./auth";
@@ -44,22 +44,6 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
   if (!parsed) {
     res.status(400).json({
       error: "Invalid GitHub repo URL. Use format: https://github.com/owner/repo",
-    });
-    return;
-  }
-
-  const visibility = await checkRepoVisibility(parsed.owner, parsed.repo);
-  if (visibility === "private") {
-    res.status(403).json({
-      error:
-        "Private repositories cannot be scanned. To protect your privacy, only public repositories are permitted so that no private source code is ever sent to an external AI service.",
-      code: "PRIVATE_REPO",
-    });
-    return;
-  }
-  if (visibility === "not_found") {
-    res.status(404).json({
-      error: "Repository not found. Please check the URL and ensure the repository exists.",
     });
     return;
   }
