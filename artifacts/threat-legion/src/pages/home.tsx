@@ -85,7 +85,7 @@ export default function Home() {
               <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
                 A multi-agent AI system that scans your <strong>GitHub repositories</strong> for
                 security vulnerabilities — with real-time reasoning, severity ranking, and code-level remediation.
-                Bring your own API key.
+                Bring your own API key. It is a web app built on entirely React/Typescript tech stack which runs locally in the browser
               </p>
             </motion.div>
 
