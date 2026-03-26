@@ -5,6 +5,9 @@
 Threat Legion uses a multi-agent AI architecture to analyze public GitHub repositories for security vulnerabilities in real time. Five specialized agents run in parallel — each focused on a distinct attack surface — and stream findings to your screen as they are discovered.
 
 No per-scan fees. Bring your own key from Anthropic, OpenAI, DeepSeek, or Groq.
+
+![Threat Legion Dashboard](_Intro_Project_Screenshot.png)
+
 ---
 
 ## Features
@@ -189,6 +192,8 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser.
 ---
 
 ## How to Use
+
+![New Scan](New_Scan.png)
 
 1. **Open the dashboard** and go to AI Settings.
 2. **Choose your AI provider** (Anthropic, OpenAI, DeepSeek, or Groq) and enter your API key.
