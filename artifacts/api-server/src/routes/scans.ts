@@ -1,11 +1,12 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, scansTable, findingsTable } from "@workspace/db";
+import { db, scansTable, findingsTable, usersTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { parseRepoUrl, checkRepoVisibility } from "../lib/github";
 import { runScan, type ScanEvent } from "../lib/scan-engine";
 import { publishScanEvent, subscribeScan } from "../lib/scan-bus";
 import { getSessionId } from "../lib/auth";
 import type { User } from "@workspace/api-zod";
+import type { LLMConfig } from "../lib/ai-provider";
 
 const router: IRouter = Router();
 
@@ -100,6 +101,27 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const [dbUser] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, user.id))
+    .limit(1);
+
+  if (!dbUser?.aiApiKey || !dbUser?.aiProvider) {
+    res.status(400).json({
+      error:
+        "No AI provider configured. Please go to Settings and add your API key before starting a scan.",
+      code: "NO_AI_KEY",
+    });
+    return;
+  }
+
+  const aiConfig: LLMConfig = {
+    provider: dbUser.aiProvider as LLMConfig["provider"],
+    apiKey: dbUser.aiApiKey,
+    model: dbUser.aiModel ?? undefined,
+  };
+
   const [scan] = await db
     .insert(scansTable)
     .values({
@@ -113,7 +135,7 @@ router.post("/scans", async (req: Request, res: Response): Promise<void> => {
 
   activeScanIds.add(scan.id);
 
-  runScan(scan.id, parsed.owner, parsed.repo, (event: ScanEvent) => {
+  runScan(scan.id, parsed.owner, parsed.repo, aiConfig, (event: ScanEvent) => {
     publishScanEvent(scan.id, event);
   }).catch((err) => {
     req.log.error({ err, scanId: scan.id }, "Background scan failed");

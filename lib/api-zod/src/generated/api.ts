@@ -27,6 +27,13 @@ export const GetMeResponse = zod.object({
   githubUsername: zod.string().nullish(),
   acceptedDisclaimerAt: zod.date().nullish(),
   tier: zod.enum(["free", "paid"]),
+  aiProvider: zod.string().nullish(),
+  aiModel: zod.string().nullish(),
+  hasApiKey: zod
+    .boolean()
+    .describe(
+      "Whether the user has an API key saved (key value is never returned)",
+    ),
 });
 
 /**
@@ -34,6 +41,33 @@ export const GetMeResponse = zod.object({
  */
 export const LogoutResponse = zod.object({
   message: zod.string(),
+});
+
+/**
+ * @summary Save the user's AI provider and API key
+ */
+export const SaveAiSettingsBody = zod.object({
+  provider: zod.enum(["anthropic", "openai", "deepseek", "groq"]),
+  apiKey: zod.string(),
+  model: zod.string().nullish(),
+});
+
+export const SaveAiSettingsResponse = zod.object({
+  id: zod.string(),
+  email: zod.string().nullish(),
+  firstName: zod.string().nullish(),
+  lastName: zod.string().nullish(),
+  profileImageUrl: zod.string().nullish(),
+  githubUsername: zod.string().nullish(),
+  acceptedDisclaimerAt: zod.date().nullish(),
+  tier: zod.enum(["free", "paid"]),
+  aiProvider: zod.string().nullish(),
+  aiModel: zod.string().nullish(),
+  hasApiKey: zod
+    .boolean()
+    .describe(
+      "Whether the user has an API key saved (key value is never returned)",
+    ),
 });
 
 /**
@@ -48,6 +82,13 @@ export const AcceptDisclaimerResponse = zod.object({
   githubUsername: zod.string().nullish(),
   acceptedDisclaimerAt: zod.date().nullish(),
   tier: zod.enum(["free", "paid"]),
+  aiProvider: zod.string().nullish(),
+  aiModel: zod.string().nullish(),
+  hasApiKey: zod
+    .boolean()
+    .describe(
+      "Whether the user has an API key saved (key value is never returned)",
+    ),
 });
 
 /**

@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@octokit/rest": "^22.0.1",
     "@replit/connectors-sdk": "^0.3.0",
     "@workspace/api-zod": "workspace:*",
@@ -20,6 +21,7 @@
     "cors": "^2",
     "drizzle-orm": "catalog:",
     "express": "^5",
+    "openai": "^6.32.0",
     "openid-client": "^6.8.2",
     "pino": "^9",
     "pino-http": "^10"

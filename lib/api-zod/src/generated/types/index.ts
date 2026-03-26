@@ -11,6 +11,8 @@ export * from "./errorResponse";
 export * from "./finding";
 export * from "./findingSeverity";
 export * from "./healthStatus";
+export * from "./saveAiSettingsBody";
+export * from "./saveAiSettingsBodyProvider";
 export * from "./scan";
 export * from "./scanStatus";
 export * from "./scanWithFindings";

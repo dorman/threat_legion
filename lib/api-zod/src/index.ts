@@ -10,4 +10,5 @@ export type {
   ScanWithFindingsStatus,
   SuccessResponse,
   User,
+  SaveAiSettingsBody,
 } from "./generated/types";

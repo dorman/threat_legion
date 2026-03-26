@@ -1,8 +1,13 @@
-import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { db, scansTable, findingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getRepoFileTree, getFileContent } from "./github";
 import { logger } from "./logger";
+import {
+  type LLMConfig,
+  type NormTool,
+  callForcedTool,
+  runAgentLoop,
+} from "./ai-provider";
 
 // ============================================================
 // PUBLIC TYPES
@@ -24,19 +29,6 @@ export type FindingData = {
   remediation: string;
   codeSnippet?: string;
 };
-
-// ============================================================
-// INTERNAL TYPES (Anthropic SDK shapes)
-// ============================================================
-
-type CreateParams = Parameters<typeof anthropic.messages.create>[0];
-type MessageParam = CreateParams["messages"][number];
-type ToolDef = NonNullable<CreateParams["tools"]>[number];
-
-type TextBlock = { type: "text"; text: string };
-type ToolUseBlock = { type: "tool_use"; id: string; name: string; input: unknown };
-type ResponseBlock = TextBlock | ToolUseBlock;
-type ToolResultParam = { type: "tool_result"; tool_use_id: string; content: string };
 
 type AgentRole = "auth" | "injection" | "secrets" | "dependency" | "general";
 
@@ -81,15 +73,15 @@ async function runConcurrently<T>(
 }
 
 // ============================================================
-// TOOL DEFINITIONS
+// TOOL DEFINITIONS (normalized, provider-agnostic)
 // ============================================================
 
-const COORDINATOR_TOOL: ToolDef = {
+const COORDINATOR_TOOL: NormTool = {
   name: "categorize_files",
   description:
-    "Classify repository files into security analysis domains. Each file should appear in exactly one category. The secrets agent searches all files automatically so do not add files to a secrets category.",
-  input_schema: {
-    type: "object" as const,
+    "Classify repository files into security analysis domains. Each file should appear in exactly one category.",
+  parameters: {
+    type: "object",
     properties: {
       auth: {
         type: "array",
@@ -120,11 +112,11 @@ const COORDINATOR_TOOL: ToolDef = {
   },
 };
 
-const SYNTHESIZER_TOOL: ToolDef = {
+const SYNTHESIZER_TOOL: NormTool = {
   name: "produce_report",
   description: "Produce the final security report after reviewing all agent findings",
-  input_schema: {
-    type: "object" as const,
+  parameters: {
+    type: "object",
     properties: {
       score: {
         type: "number",
@@ -141,13 +133,13 @@ const SYNTHESIZER_TOOL: ToolDef = {
   },
 };
 
-function buildSpecialistTools(role: AgentRole): ToolDef[] {
+function buildSpecialistTools(role: AgentRole): NormTool[] {
   return [
     {
       name: "read_file",
       description: "Read the contents of a specific file in the repository",
-      input_schema: {
-        type: "object" as const,
+      parameters: {
+        type: "object",
         properties: { path: { type: "string", description: "File path to read" } },
         required: ["path"],
       },
@@ -155,8 +147,8 @@ function buildSpecialistTools(role: AgentRole): ToolDef[] {
     {
       name: "list_directory",
       description: "List files in the repository",
-      input_schema: {
-        type: "object" as const,
+      parameters: {
+        type: "object",
         properties: {
           path: { type: "string", description: "Directory path (use / for root)" },
         },
@@ -166,11 +158,14 @@ function buildSpecialistTools(role: AgentRole): ToolDef[] {
     {
       name: "search_files",
       description: "Search for a regex pattern across all repository files",
-      input_schema: {
-        type: "object" as const,
+      parameters: {
+        type: "object",
         properties: {
           pattern: { type: "string", description: "Regex pattern to search for" },
-          max_results: { type: "number", description: "Max number of matches to return (default 20)" },
+          max_results: {
+            type: "number",
+            description: "Max number of matches to return (default 20)",
+          },
         },
         required: ["pattern"],
       },
@@ -178,17 +173,26 @@ function buildSpecialistTools(role: AgentRole): ToolDef[] {
     {
       name: "report_finding",
       description: "Report a confirmed security vulnerability finding",
-      input_schema: {
-        type: "object" as const,
+      parameters: {
+        type: "object",
         properties: {
           severity: { type: "string", description: "critical | high | medium | low" },
           title: { type: "string", description: "Short descriptive title" },
           file_path: { type: "string", description: "Affected file path" },
           line_start: { type: "number", description: "Starting line number" },
           line_end: { type: "number", description: "Ending line number" },
-          description: { type: "string", description: "Detailed explanation of the vulnerability and its risk" },
-          remediation: { type: "string", description: "Specific steps to fix the vulnerability" },
-          code_snippet: { type: "string", description: "The vulnerable code snippet" },
+          description: {
+            type: "string",
+            description: "Detailed explanation of the vulnerability and its risk",
+          },
+          remediation: {
+            type: "string",
+            description: "Specific steps to fix the vulnerability",
+          },
+          code_snippet: {
+            type: "string",
+            description: "The vulnerable code snippet",
+          },
         },
         required: ["severity", "title", "description", "remediation"],
       },
@@ -196,10 +200,13 @@ function buildSpecialistTools(role: AgentRole): ToolDef[] {
     {
       name: "complete_analysis",
       description: `Signal that the ${role} security analysis is complete. Call this when you have finished reviewing all assigned files.`,
-      input_schema: {
-        type: "object" as const,
+      parameters: {
+        type: "object",
         properties: {
-          files_reviewed: { type: "number", description: "Number of files examined" },
+          files_reviewed: {
+            type: "number",
+            description: "Number of files examined",
+          },
           notes: { type: "string", description: "Brief summary of what was reviewed" },
         },
         required: ["files_reviewed"],
@@ -299,11 +306,11 @@ type ReportFindingInput = {
 type FileToolInput = { path?: string };
 type SearchToolInput = { pattern?: string; max_results?: number };
 type CompleteInput = { files_reviewed?: number; notes?: string };
-
 type SpecialistToolInput = FileToolInput & SearchToolInput & ReportFindingInput & CompleteInput;
 
 async function executeSpecialistTool(
-  block: ToolUseBlock,
+  toolName: string,
+  rawInput: unknown,
   allFiles: string[],
   owner: string,
   repo: string,
@@ -312,16 +319,15 @@ async function executeSpecialistTool(
   agentLabel: string,
   onEvent: (event: ScanEvent) => void
 ): Promise<{ result: string; isDone: boolean }> {
-  const name = block.name;
-  const input = block.input as SpecialistToolInput;
+  const input = rawInput as SpecialistToolInput;
 
-  if (name === "read_file") {
+  if (toolName === "read_file") {
     const content = await getFileContent(owner, repo, input.path ?? "");
     onEvent({ type: "log", message: `[${agentLabel}] Reading ${input.path}` });
     return { result: content ?? "File not found or unreadable", isDone: false };
   }
 
-  if (name === "list_directory") {
+  if (toolName === "list_directory") {
     const dir = input.path === "/" ? "" : (input.path ?? "");
     const dirFiles = allFiles.filter((f) =>
       dir === "" ? !f.includes("/") : f.startsWith(dir + "/")
@@ -332,7 +338,7 @@ async function executeSpecialistTool(
     };
   }
 
-  if (name === "search_files") {
+  if (toolName === "search_files") {
     try {
       const regex = new RegExp(input.pattern ?? "", "gi");
       const max = input.max_results ?? 20;
@@ -349,14 +355,20 @@ async function executeSpecialistTool(
           }
         }
       }
-      onEvent({ type: "log", message: `[${agentLabel}] Searched for pattern — ${matches.length} matches` });
-      return { result: matches.length > 0 ? matches.join("\n") : "No matches found", isDone: false };
+      onEvent({
+        type: "log",
+        message: `[${agentLabel}] Searched for pattern — ${matches.length} matches`,
+      });
+      return {
+        result: matches.length > 0 ? matches.join("\n") : "No matches found",
+        isDone: false,
+      };
     } catch {
       return { result: "Invalid regex pattern", isDone: false };
     }
   }
 
-  if (name === "report_finding") {
+  if (toolName === "report_finding") {
     const validSeverities = ["critical", "high", "medium", "low"] as const;
     const raw = input.severity ?? "low";
     const severity: FindingData["severity"] = (
@@ -390,11 +402,14 @@ async function executeSpecialistTool(
     });
 
     onEvent({ type: "finding", finding });
-    onEvent({ type: "log", message: `[${agentLabel}] Reported ${severity.toUpperCase()}: ${finding.title}` });
+    onEvent({
+      type: "log",
+      message: `[${agentLabel}] Reported ${severity.toUpperCase()}: ${finding.title}`,
+    });
     return { result: "Finding recorded and streamed", isDone: false };
   }
 
-  if (name === "complete_analysis") {
+  if (toolName === "complete_analysis") {
     onEvent({
       type: "log",
       message: `[${agentLabel}] Analysis complete — reviewed ${input.files_reviewed ?? "?"} files`,
@@ -410,23 +425,17 @@ async function executeSpecialistTool(
 // ============================================================
 
 async function runCoordinator(
+  config: LLMConfig,
   files: string[],
   onEvent: (event: ScanEvent) => void
 ): Promise<FileCategories> {
   onEvent({ type: "log", message: "Coordinator agent classifying repository structure..." });
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+    const result = await callForcedTool<FileCategories>(config, {
       system:
         "You are a security scan coordinator. Your only job is to classify a list of repository files into security analysis domains so that specialist agents can focus their expertise. Be precise and thorough — every file should be assigned to exactly one category.",
-      tools: [COORDINATOR_TOOL],
-      tool_choice: { type: "tool", name: "categorize_files" },
-      messages: [
-        {
-          role: "user",
-          content: `Classify these ${files.length} repository files into the four security analysis domains:
+      userMessage: `Classify these ${files.length} repository files into the four security analysis domains:
 
 ${files.join("\n")}
 
@@ -437,20 +446,18 @@ Rules:
 - general: everything else (routes, utilities, config, tests, etc.)
 
 Every file must appear in exactly one category.`,
-        },
-      ],
+      tool: COORDINATOR_TOOL,
+      maxTokens: 4096,
     });
 
-    const toolBlock = response.content.find((b) => b.type === "tool_use");
-    if (toolBlock && "input" in toolBlock) {
-      const cats = toolBlock.input as FileCategories;
+    if (result) {
       const total =
-        cats.auth.length + cats.injection.length + cats.dependency.length + cats.general.length;
+        result.auth.length + result.injection.length + result.dependency.length + result.general.length;
       onEvent({
         type: "log",
-        message: `Coordinator: ${cats.auth.length} auth · ${cats.injection.length} injection · ${cats.dependency.length} dependency · ${cats.general.length} general (${total} classified)`,
+        message: `Coordinator: ${result.auth.length} auth · ${result.injection.length} injection · ${result.dependency.length} dependency · ${result.general.length} general (${total} classified)`,
       });
-      return cats;
+      return result;
     }
   } catch (err) {
     logger.warn({ err }, "Coordinator agent failed — falling back to full-general");
@@ -464,6 +471,7 @@ Every file must appear in exactly one category.`,
 // ============================================================
 
 async function runSpecialistAgent(
+  config: LLMConfig,
   spec: AgentSpec,
   allFiles: string[],
   owner: string,
@@ -482,13 +490,10 @@ async function runSpecialistAgent(
     message: `[${spec.label}] Starting analysis of ${spec.assignedFiles.length} files...`,
   });
 
-  const tools = buildSpecialistTools(spec.role);
-  const systemPrompt = SPECIALIST_PROMPTS[spec.role];
-
-  const messages: MessageParam[] = [
-    {
-      role: "user",
-      content: `You are the ${spec.label} agent in a multi-agent security scan of ${owner}/${repo}.
+  try {
+    await runAgentLoop(config, {
+      system: SPECIALIST_PROMPTS[spec.role],
+      initialMessage: `You are the ${spec.label} agent in a multi-agent security scan of ${owner}/${repo}.
 
 Your assigned files (${spec.assignedFiles.length}):
 ${spec.assignedFiles.join("\n")}
@@ -496,70 +501,26 @@ ${spec.assignedFiles.join("\n")}
 Analyse each file for security vulnerabilities in your domain. Use read_file to examine file contents, search_files to find specific patterns across the codebase, report_finding for each vulnerability confirmed, and complete_analysis when you are finished.
 
 Start now.`,
-    },
-  ];
-
-  let done = false;
-  let iterations = 0;
-  const MAX_ITER = 15;
-
-  while (!done && iterations < MAX_ITER) {
-    iterations++;
-
-    let response;
-    try {
-      response = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
-        system: systemPrompt,
-        tools,
-        messages,
-      });
-    } catch (err) {
-      logger.error({ err, agent: spec.label }, "Specialist agent API call failed");
-      onEvent({ type: "log", message: `[${spec.label}] API error — stopping agent` });
-      break;
-    }
-
-    const responseBlocks = response.content as ResponseBlock[];
-    messages.push({
-      role: "assistant",
-      content: responseBlocks as MessageParam extends { role: "assistant"; content: infer C }
-        ? C
-        : never,
+      tools: buildSpecialistTools(spec.role),
+      maxTokens: 8192,
+      maxIterations: 15,
+      onToolCall: async (name, input) => {
+        return executeSpecialistTool(
+          name,
+          input,
+          allFiles,
+          owner,
+          repo,
+          scanId,
+          findings,
+          spec.label,
+          onEvent
+        );
+      },
     });
-
-    if (response.stop_reason === "end_turn") break;
-
-    const toolBlocks = responseBlocks.filter(
-      (b): b is ToolUseBlock => b.type === "tool_use"
-    );
-    if (toolBlocks.length === 0) break;
-
-    const toolResults: ToolResultParam[] = [];
-    for (const block of toolBlocks) {
-      const { result, isDone } = await executeSpecialistTool(
-        block,
-        allFiles,
-        owner,
-        repo,
-        scanId,
-        findings,
-        spec.label,
-        onEvent
-      );
-      toolResults.push({ type: "tool_result", tool_use_id: block.id, content: result });
-      if (isDone) done = true;
-    }
-
-    messages.push({
-      role: "user",
-      content: toolResults as MessageParam extends { role: "user"; content: infer C }
-        ? C
-        : never,
-    });
-
-    if (done) break;
+  } catch (err) {
+    logger.error({ err, agent: spec.label }, "Specialist agent failed");
+    onEvent({ type: "log", message: `[${spec.label}] API error — stopping agent` });
   }
 
   onEvent({ type: "log", message: `[${spec.label}] Agent finished` });
@@ -570,6 +531,7 @@ Start now.`,
 // ============================================================
 
 async function runSynthesizer(
+  config: LLMConfig,
   findings: FindingData[],
   owner: string,
   repo: string,
@@ -590,17 +552,10 @@ async function runSynthesizer(
     .join("\n");
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
+    const result = await callForcedTool<{ score: number; summary: string }>(config, {
       system:
         "You are a senior security analyst synthesising results from a multi-agent vulnerability scan. Produce an accurate, calibrated final assessment.",
-      tools: [SYNTHESIZER_TOOL],
-      tool_choice: { type: "tool", name: "produce_report" },
-      messages: [
-        {
-          role: "user",
-          content: `Repository: ${owner}/${repo}
+      userMessage: `Repository: ${owner}/${repo}
 
 Multi-agent scan results:
 - Critical findings: ${critCount}
@@ -613,16 +568,14 @@ Findings detail:
 ${findingSummary || "No findings reported"}
 
 Produce the final security score and executive summary. The score should start at 100 and be reduced by: 20 per critical, 10 per high, 5 per medium, 2 per low (minimum 0). The summary should identify the most important findings and remediation priorities.`,
-        },
-      ],
+      tool: SYNTHESIZER_TOOL,
+      maxTokens: 2048,
     });
 
-    const toolBlock = response.content.find((b) => b.type === "tool_use");
-    if (toolBlock && "input" in toolBlock) {
-      const out = toolBlock.input as { score: number; summary: string };
+    if (result) {
       return {
-        score: Math.max(0, Math.min(100, out.score)),
-        summary: out.summary,
+        score: Math.max(0, Math.min(100, result.score)),
+        summary: result.summary,
       };
     }
   } catch (err) {
@@ -647,6 +600,7 @@ export async function runScan(
   scanId: number,
   owner: string,
   repo: string,
+  aiConfig: LLMConfig,
   onEvent: (event: ScanEvent) => void
 ): Promise<void> {
   const allFindings: FindingData[] = [];
@@ -661,7 +615,13 @@ export async function runScan(
     const allFiles = await getRepoFileTree(owner, repo, 200);
     onEvent({ type: "log", message: `Fetched ${allFiles.length} files from repository` });
 
-    const categories = await runCoordinator(allFiles, onEvent);
+    if (allFiles.length === 0) {
+      throw new Error(
+        "Repository appears empty or inaccessible. Verify the repo is public and the URL is correct."
+      );
+    }
+
+    const categories = await runCoordinator(aiConfig, allFiles, onEvent);
 
     const agentSpecs: AgentSpec[] = ([
       {
@@ -700,7 +660,7 @@ export async function runScan(
     await runConcurrently(
       agentSpecs.map(
         (spec) => () =>
-          runSpecialistAgent(spec, allFiles, owner, repo, scanId, allFindings, onEvent)
+          runSpecialistAgent(aiConfig, spec, allFiles, owner, repo, scanId, allFindings, onEvent)
       ),
       3
     );
@@ -710,7 +670,7 @@ export async function runScan(
       message: `All ${agentCount} agents finished. ${allFindings.length} total finding${allFindings.length !== 1 ? "s" : ""} collected.`,
     });
 
-    const { score, summary } = await runSynthesizer(allFindings, owner, repo, onEvent);
+    const { score, summary } = await runSynthesizer(aiConfig, allFindings, owner, repo, onEvent);
 
     const criticalCount = allFindings.filter((f) => f.severity === "critical").length;
     const highCount = allFindings.filter((f) => f.severity === "high").length;

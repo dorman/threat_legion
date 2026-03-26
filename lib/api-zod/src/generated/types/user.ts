@@ -16,4 +16,8 @@ export interface User {
   githubUsername?: string | null;
   acceptedDisclaimerAt?: Date | null;
   tier: UserTier;
+  aiProvider?: string | null;
+  aiModel?: string | null;
+  /** Whether the user has an API key saved (key value is never returned) */
+  hasApiKey: boolean;
 }

@@ -166,6 +166,9 @@ importers:
 
   artifacts/api-server:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.78.0
+        version: 0.78.0(zod@4.3.6)
       '@octokit/rest':
         specifier: ^22.0.1
         version: 22.0.1
@@ -196,6 +199,9 @@ importers:
       express:
         specifier: ^5
         version: 5.2.1
+      openai:
+        specifier: ^6.32.0
+        version: 6.32.0(zod@4.3.6)
       openid-client:
         specifier: ^6.8.2
         version: 6.8.2

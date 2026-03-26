@@ -20,6 +20,7 @@ import type {
   CreateScanBody,
   ErrorResponse,
   HealthStatus,
+  SaveAiSettingsBody,
   Scan,
   ScanWithFindings,
   Subscription,
@@ -254,6 +255,92 @@ export const useLogout = <
   TContext
 > => {
   return useMutation(getLogoutMutationOptions(options));
+};
+
+/**
+ * @summary Save the user's AI provider and API key
+ */
+export const getSaveAiSettingsUrl = () => {
+  return `/api/auth/ai-settings`;
+};
+
+export const saveAiSettings = async (
+  saveAiSettingsBody: SaveAiSettingsBody,
+  options?: RequestInit,
+): Promise<User> => {
+  return customFetch<User>(getSaveAiSettingsUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(saveAiSettingsBody),
+  });
+};
+
+export const getSaveAiSettingsMutationOptions = <
+  TError = ErrorType<ErrorResponse | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveAiSettings>>,
+    TError,
+    { data: BodyType<SaveAiSettingsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof saveAiSettings>>,
+  TError,
+  { data: BodyType<SaveAiSettingsBody> },
+  TContext
+> => {
+  const mutationKey = ["saveAiSettings"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof saveAiSettings>>,
+    { data: BodyType<SaveAiSettingsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return saveAiSettings(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SaveAiSettingsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof saveAiSettings>>
+>;
+export type SaveAiSettingsMutationBody = BodyType<SaveAiSettingsBody>;
+export type SaveAiSettingsMutationError = ErrorType<ErrorResponse | void>;
+
+/**
+ * @summary Save the user's AI provider and API key
+ */
+export const useSaveAiSettings = <
+  TError = ErrorType<ErrorResponse | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof saveAiSettings>>,
+    TError,
+    { data: BodyType<SaveAiSettingsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof saveAiSettings>>,
+  TError,
+  { data: BodyType<SaveAiSettingsBody> },
+  TContext
+> => {
+  return useMutation(getSaveAiSettingsMutationOptions(options));
 };
 
 /**

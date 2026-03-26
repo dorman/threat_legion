@@ -1,18 +1,47 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock, ChevronRight, Loader2, Shield, Lock, Trash2 } from "lucide-react";
+import {
+  Github, AlertTriangle, CheckCircle2, XCircle, Search, Clock,
+  ChevronRight, Loader2, Shield, Lock, Trash2, Key, Settings, Eye, EyeOff,
+  ChevronDown, ChevronUp,
+} from "lucide-react";
 import { NinjaHoodIcon } from "@/components/ui/NinjaHoodIcon";
 import { format } from "date-fns";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { DisclaimerModal } from "@/components/ui/DisclaimerModal";
-import { useGetMe, useListScans, useCreateScan, useDeleteScan, getGetMeQueryKey, getListScansQueryKey } from "@workspace/api-client-react";
+import {
+  useGetMe, useListScans, useCreateScan, useDeleteScan, useSaveAiSettings,
+  getGetMeQueryKey, getListScansQueryKey,
+} from "@workspace/api-client-react";
 import type { CreateScanMutationError } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getScoreColor, cn } from "@/lib/utils";
 
 type RepoCheck = "idle" | "checking" | "public" | "private" | "not_found";
+
+const AI_PROVIDERS = [
+  { value: "anthropic", label: "Anthropic (Claude)" },
+  { value: "openai",    label: "OpenAI (GPT-4)" },
+  { value: "deepseek",  label: "DeepSeek" },
+  { value: "groq",      label: "Groq" },
+] as const;
+type ProviderValue = (typeof AI_PROVIDERS)[number]["value"];
+
+const DEFAULT_MODELS: Record<ProviderValue, string> = {
+  anthropic: "claude-opus-4-5",
+  openai:    "gpt-4o",
+  deepseek:  "deepseek-chat",
+  groq:      "llama-3.3-70b-versatile",
+};
+
+const PROVIDER_KEY_HINTS: Record<ProviderValue, string> = {
+  anthropic: "sk-ant-...",
+  openai:    "sk-...",
+  deepseek:  "sk-...",
+  groq:      "gsk_...",
+};
 
 function parseGithubUrl(url: string): { owner: string; repo: string } | null {
   try {
@@ -34,6 +63,13 @@ export default function Dashboard() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queryClient = useQueryClient();
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<ProviderValue>("anthropic");
+  const [apiKey, setApiKey] = useState("");
+  const [model, setModel] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
   const { data: user, isLoading: isUserLoading, isError: isUserError } = useGetMe({
     query: { queryKey: getGetMeQueryKey(), retry: false }
@@ -63,6 +99,35 @@ export default function Dashboard() {
     }
   });
 
+  const { mutate: saveSettings, isPending: isSavingSettings } = useSaveAiSettings({
+    mutation: {
+      onSuccess: (updatedUser) => {
+        void queryClient.setQueryData(getGetMeQueryKey(), updatedUser);
+        setApiKey("");
+        setSettingsSaved(true);
+        setTimeout(() => setSettingsSaved(false), 3000);
+      },
+    }
+  });
+
+  useEffect(() => {
+    if (user?.aiProvider) {
+      setSelectedProvider(user.aiProvider as ProviderValue);
+    }
+    if (user?.aiModel) {
+      setModel(user.aiModel);
+    }
+  }, [user?.aiProvider, user?.aiModel]);
+
+  useEffect(() => {
+    if (!settingsOpen || model) return;
+    setModel(DEFAULT_MODELS[selectedProvider]);
+  }, [selectedProvider, settingsOpen]);
+
+  useEffect(() => {
+    if (!model) setModel(DEFAULT_MODELS[selectedProvider]);
+  }, [selectedProvider]);
+
   useEffect(() => {
     if (!isUserLoading && isUserError) {
       setLocation("/");
@@ -85,14 +150,8 @@ export default function Dashboard() {
           `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`,
           { headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } }
         );
-        if (res.status === 404) {
-          setRepoCheck("private");
-          return;
-        }
-        if (!res.ok) {
-          setRepoCheck("not_found");
-          return;
-        }
+        if (res.status === 404) { setRepoCheck("private"); return; }
+        if (!res.ok) { setRepoCheck("not_found"); return; }
         const data = (await res.json()) as { private?: boolean };
         setRepoCheck(data.private ? "private" : "public");
       } catch {
@@ -100,9 +159,7 @@ export default function Dashboard() {
       }
     }, 600);
 
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [repoUrl]);
 
   if (isUserLoading) {
@@ -116,27 +173,33 @@ export default function Dashboard() {
   if (!user) return null;
 
   const hasAcceptedDisclaimer = !!user.acceptedDisclaimerAt;
+  const hasApiKey = user.hasApiKey;
 
   const handleScanSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorStr("");
-    if (!repoUrl.trim()) {
-      setErrorStr("Please enter a valid GitHub URL");
+    if (!hasApiKey) {
+      setErrorStr("Configure your AI provider and API key in Settings below before scanning.");
+      setSettingsOpen(true);
       return;
     }
-    if (!repoUrl.includes("github.com")) {
-      setErrorStr("Only GitHub repositories are supported currently");
-      return;
-    }
-    if (repoCheck === "private") {
-      setErrorStr("Private repositories cannot be scanned due to data privacy restrictions.");
-      return;
-    }
-    if (repoCheck === "checking") {
-      setErrorStr("Please wait while we verify the repository...");
-      return;
-    }
+    if (!repoUrl.trim()) { setErrorStr("Please enter a valid GitHub URL"); return; }
+    if (!repoUrl.includes("github.com")) { setErrorStr("Only GitHub repositories are supported currently"); return; }
+    if (repoCheck === "private") { setErrorStr("Private repositories cannot be scanned due to data privacy restrictions."); return; }
+    if (repoCheck === "checking") { setErrorStr("Please wait while we verify the repository..."); return; }
     createScan({ data: { repoUrl } });
+  };
+
+  const handleSaveSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!apiKey.trim()) return;
+    saveSettings({
+      data: {
+        provider: selectedProvider,
+        apiKey: apiKey.trim(),
+        model: model.trim() || null,
+      }
+    });
   };
 
   const getStatusIcon = (status: string) => {
@@ -150,17 +213,15 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {!hasAcceptedDisclaimer && (
-        <DisclaimerModal onAccepted={() => {}} />
-      )}
-
+      {!hasAcceptedDisclaimer && <DisclaimerModal onAccepted={() => {}} />}
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* Left Column: Create Scan */}
+          {/* Left Column */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Scan Form */}
             <div className="bg-card rounded-2xl border border-white/5 p-6 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10 blur-2xl" />
 
@@ -169,8 +230,22 @@ export default function Dashboard() {
                 New Security Scan
               </h2>
               <p className="text-sm text-muted-foreground mb-6">
-                Enter a GitHub repository URL you own or collaborate on to begin an autonomous vulnerability assessment.
+                Enter a public GitHub repository URL to begin an autonomous multi-agent vulnerability assessment.
               </p>
+
+              {!hasApiKey && (
+                <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 mb-4">
+                  <div className="flex items-start gap-2">
+                    <Key className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-yellow-400">API key required</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Add your AI provider key in <button onClick={() => setSettingsOpen(true)} className="underline hover:text-foreground transition-colors">Settings below</button> to start scanning.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <form onSubmit={handleScanSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -182,10 +257,7 @@ export default function Dashboard() {
                       type="url"
                       placeholder="https://github.com/username/repo"
                       value={repoUrl}
-                      onChange={(e) => {
-                        setRepoUrl(e.target.value);
-                        setErrorStr("");
-                      }}
+                      onChange={(e) => { setRepoUrl(e.target.value); setErrorStr(""); }}
                       className={cn(
                         "w-full h-11 pl-10 pr-10 rounded-lg bg-background border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono text-sm",
                         (errorStr || repoCheck === "private") && "border-destructive focus:border-destructive focus:ring-destructive/20",
@@ -207,7 +279,7 @@ export default function Dashboard() {
                         <div>
                           <p className="text-sm font-semibold text-destructive">Private repository — cannot scan</p>
                           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                            ThreatLegion sends code to a third-party AI provider (Claude AI by Anthropic) for analysis. To protect your privacy, only <strong>public repositories</strong> are permitted. Private source code is never shared with external AI services.
+                            Your API key is sent directly to your chosen AI provider. Only <strong>public repositories</strong> are permitted to prevent private source code from being sent to external AI services.
                           </p>
                         </div>
                       </div>
@@ -233,7 +305,7 @@ export default function Dashboard() {
                   className="w-full h-11 font-semibold"
                 >
                   {isCreating ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing Agent...</>
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing Agents...</>
                   ) : repoCheck === "checking" ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Checking Repository...</>
                   ) : (
@@ -243,12 +315,118 @@ export default function Dashboard() {
               </form>
             </div>
 
+            {/* AI Settings Panel */}
+            <div className="bg-card rounded-2xl border border-white/5 shadow-xl overflow-hidden">
+              <button
+                onClick={() => setSettingsOpen(v => !v)}
+                className="w-full flex items-center justify-between p-5 hover:bg-white/[0.02] transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-primary" />
+                  <span className="font-medium">AI Provider Settings</span>
+                  {hasApiKey && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-medium">
+                      {user.aiProvider ?? "configured"}
+                    </span>
+                  )}
+                </div>
+                {settingsOpen ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                )}
+              </button>
+
+              {settingsOpen && (
+                <form onSubmit={handleSaveSettings} className="px-5 pb-5 space-y-4 border-t border-white/5 pt-4">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Your key is stored encrypted and only used to call the selected provider during scans. It is never returned to the browser after saving.
+                  </p>
+
+                  {/* Provider */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Provider</label>
+                    <select
+                      value={selectedProvider}
+                      onChange={(e) => {
+                        setSelectedProvider(e.target.value as ProviderValue);
+                        setModel(DEFAULT_MODELS[e.target.value as ProviderValue]);
+                      }}
+                      className="w-full h-10 px-3 rounded-lg bg-background border border-border text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    >
+                      {AI_PROVIDERS.map(p => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* API Key */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      API Key
+                      {hasApiKey && (
+                        <span className="ml-2 text-xs text-green-400 font-normal">• saved — enter new key to replace</span>
+                      )}
+                    </label>
+                    <div className="relative">
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type={showKey ? "text" : "password"}
+                        placeholder={PROVIDER_KEY_HINTS[selectedProvider]}
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        className="w-full h-10 pl-10 pr-10 rounded-lg bg-background border border-border text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowKey(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Model */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      Model
+                      <span className="ml-2 text-xs text-muted-foreground font-normal">optional — uses default if blank</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={DEFAULT_MODELS[selectedProvider]}
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg bg-background border border-border text-sm font-mono focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isSavingSettings || !apiKey.trim()}
+                    className="w-full h-10"
+                  >
+                    {isSavingSettings ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+                    ) : settingsSaved ? (
+                      <><CheckCircle2 className="w-4 h-4 mr-2 text-green-400" /> Saved!</>
+                    ) : (
+                      <><Key className="w-4 h-4 mr-2" /> Save API Key</>
+                    )}
+                  </Button>
+                </form>
+              )}
+            </div>
+
+            {/* Warning cards */}
             <div className="bg-secondary/50 rounded-xl p-5 border border-white/5">
               <h3 className="font-medium mb-2 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-yellow-500" /> Authorization Required
               </h3>
               <p className="text-sm text-muted-foreground">
-                For security and ethical reasons, Threat Legion verifies you are an owner or collaborator of the target repository via your connected GitHub account.
+                Threat Legion verifies you are an owner or collaborator of the target repository via your connected GitHub account.
               </p>
             </div>
 
@@ -264,9 +442,7 @@ export default function Dashboard() {
 
           {/* Right Column: Scan History */}
           <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              Scan History
-            </h2>
+            <h2 className="text-2xl font-bold flex items-center gap-2">Scan History</h2>
 
             {isScansLoading ? (
               <div className="space-y-4">
@@ -281,7 +457,7 @@ export default function Dashboard() {
                 </div>
                 <h3 className="text-xl font-medium mb-2">No scans yet</h3>
                 <p className="text-muted-foreground max-w-sm mb-6">
-                  You haven't run any vulnerability assessments yet. Start your first scan using the form on the left.
+                  You haven't run any vulnerability assessments yet. {!hasApiKey ? "Configure your AI provider key in Settings, then start" : "Start"} your first scan using the form on the left.
                 </p>
               </div>
             ) : (
@@ -302,9 +478,7 @@ export default function Dashboard() {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="hidden sm:block">
-                              {getStatusIcon(scan.status)}
-                            </div>
+                            <div className="hidden sm:block">{getStatusIcon(scan.status)}</div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
                                 <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
@@ -346,12 +520,8 @@ export default function Dashboard() {
                               </div>
                             )}
 
-                            {/* Delete / confirm row */}
                             {canDelete && (
-                              <div
-                                className="flex items-center gap-2 ml-2"
-                                onClick={(e) => e.preventDefault()}
-                              >
+                              <div className="flex items-center gap-2 ml-2" onClick={(e) => e.preventDefault()}>
                                 {isConfirming ? (
                                   <>
                                     <button

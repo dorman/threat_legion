@@ -63,6 +63,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /auth/ai-settings:
+    put:
+      operationId: saveAiSettings
+      tags: [auth]
+      summary: Save the user's AI provider and API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveAiSettingsBody"
+      responses:
+        "200":
+          description: Settings saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+
   /auth/accept-disclaimer:
     post:
       operationId: acceptDisclaimer
@@ -305,9 +332,34 @@ components:
         tier:
           type: string
           enum: [free, paid]
+        aiProvider:
+          type: string
+          nullable: true
+        aiModel:
+          type: string
+          nullable: true
+        hasApiKey:
+          type: boolean
+          description: Whether the user has an API key saved (key value is never returned)
       required:
         - id
         - tier
+        - hasApiKey
+
+    SaveAiSettingsBody:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [anthropic, openai, deepseek, groq]
+        apiKey:
+          type: string
+        model:
+          type: string
+          nullable: true
+      required:
+        - provider
+        - apiKey
 
     Subscription:
       type: object

@@ -54,6 +54,24 @@ function getSafeReturnTo(value: unknown): string {
   return value;
 }
 
+type DbUser = typeof usersTable.$inferSelect;
+
+function toApiUser(user: DbUser): User {
+  return {
+    id: user.id,
+    email: user.email ?? null,
+    firstName: user.firstName ?? null,
+    lastName: user.lastName ?? null,
+    profileImageUrl: user.profileImageUrl ?? null,
+    githubUsername: user.githubUsername ?? null,
+    acceptedDisclaimerAt: user.acceptedDisclaimerAt ?? null,
+    tier: (user.tier as "free" | "paid") ?? "free",
+    aiProvider: user.aiProvider ?? null,
+    aiModel: user.aiModel ?? null,
+    hasApiKey: Boolean(user.aiApiKey),
+  };
+}
+
 async function upsertUser(
   claims: Record<string, unknown>,
   githubUsername: string | null
@@ -78,24 +96,22 @@ async function upsertUser(
       },
     })
     .returning();
-  return {
-    id: user.id,
-    email: user.email ?? null,
-    firstName: user.firstName ?? null,
-    lastName: user.lastName ?? null,
-    profileImageUrl: user.profileImageUrl ?? null,
-    githubUsername: user.githubUsername ?? null,
-    acceptedDisclaimerAt: user.acceptedDisclaimerAt ?? null,
-    tier: (user.tier as "free" | "paid") ?? "free",
-  };
+
+  return toApiUser(user!);
 }
 
-router.get("/auth/me", (req: Request, res: Response) => {
+router.get("/auth/me", async (req: Request, res: Response) => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
-  res.json(req.user);
+  const sessionUser = req.user as User;
+  const [fresh] = await db.select().from(usersTable).where(eq(usersTable.id, sessionUser.id)).limit(1);
+  if (!fresh) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+  res.json(toApiUser(fresh));
 });
 
 router.get("/auth/login", async (req: Request, res: Response) => {
@@ -200,16 +216,63 @@ router.post("/auth/accept-disclaimer", async (req: Request, res: Response) => {
     .where(eq(usersTable.id, currentUser.id))
     .returning();
 
-  const updatedUser: User = {
-    id: updated.id,
-    email: updated.email ?? null,
-    firstName: updated.firstName ?? null,
-    lastName: updated.lastName ?? null,
-    profileImageUrl: updated.profileImageUrl ?? null,
-    githubUsername: updated.githubUsername ?? null,
-    acceptedDisclaimerAt: updated.acceptedDisclaimerAt ?? null,
-    tier: updated.tier as "free" | "paid",
+  const updatedUser = toApiUser(updated!);
+
+  const sid = getSessionId(req);
+  if (sid) {
+    const session = await getSession(sid);
+    if (session) {
+      await updateSession(sid, { ...session, user: updatedUser });
+    }
+  }
+
+  res.json(updatedUser);
+});
+
+const VALID_PROVIDERS = ["anthropic", "openai", "deepseek", "groq"] as const;
+type ValidProvider = (typeof VALID_PROVIDERS)[number];
+
+router.put("/auth/ai-settings", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const currentUser = req.user as User;
+  const { provider, apiKey, model } = req.body as {
+    provider?: unknown;
+    apiKey?: unknown;
+    model?: unknown;
   };
+
+  if (
+    !provider ||
+    typeof provider !== "string" ||
+    !(VALID_PROVIDERS as readonly string[]).includes(provider)
+  ) {
+    res.status(400).json({
+      error: `provider must be one of: ${VALID_PROVIDERS.join(", ")}`,
+    });
+    return;
+  }
+
+  if (!apiKey || typeof apiKey !== "string" || apiKey.trim().length === 0) {
+    res.status(400).json({ error: "apiKey is required and must be a non-empty string" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({
+      aiProvider: provider as ValidProvider,
+      aiApiKey: apiKey.trim(),
+      aiModel: model && typeof model === "string" && model.trim() ? model.trim() : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(usersTable.id, currentUser.id))
+    .returning();
+
+  const updatedUser = toApiUser(updated!);
 
   const sid = getSessionId(req);
   if (sid) {
