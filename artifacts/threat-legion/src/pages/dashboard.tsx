@@ -49,7 +49,10 @@ const [open, setOpen] = useState(true) // true = open on mount
   <br>Review the full report — each finding includes severity, affected file, line numbers, a code snippet, and remediation steps.</br>
   </p>
   
-  </Dialog>
+    <Button onClick={() => setOpen(false)}>Close</Button>
+  </DialogContent>
+
+</Dialog>
 
 
 
