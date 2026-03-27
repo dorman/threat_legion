@@ -21,7 +21,38 @@ import { getScoreColor, cn } from "@/lib/utils";
 import { useDebouncer } from '@tanstack/pacer/react'
 import { useThrottler } from '@tanstack/pacer/react'
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+
 // inside Dashboard():
+const [open, setOpen] = useState(true) // true = open on mount
+
+// JSX:
+<>
+  <Dialog open={open} onOpenChange={setOpen}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>How to use Threat Legion</DialogTitle>
+      </DialogHeader>
+
+<p>
+  <br>Open the dashboard and go to AI Settings.</br>
+  <br>Choose your AI provider (Anthropic, OpenAI, DeepSeek, or Groq) and enter your API key.</br>
+  <br>Paste a public GitHub repository URL into the scan input (e.g. https://github.com/owner/repo).</br>
+  <br>Start the scan. The five agents will begin analyzing the repository in parallel.
+  <br>Watch findings stream in as each agent reports vulnerabilities.</br>
+  <br>Review the full report — each finding includes severity, affected file, line numbers, a code snippet, and remediation steps.</br>
+  </p>
+  
+  </Dialog>
+
+
+
 const [repoUrlError, setRepoUrlError] = useState("")
 
 const debouncedValidate = useDebouncer(
