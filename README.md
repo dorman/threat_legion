@@ -114,80 +114,68 @@ threat-legion/
 ### Prerequisites
 
 - **Node.js** 24+
-- **pnpm** (required — npm and yarn are blocked by the preinstall script)
 - **PostgreSQL** 16+
-
-Install pnpm if you don't have it:
-```bash
-npm install -g pnpm
-```
+- **pnpm** is required (npm and yarn are blocked). Install it if needed: `npm install -g pnpm`
 
 ---
 
-### 1. Clone the Repository
+### 1. Clone and run setup
 
 ```bash
 git clone https://github.com/dorman/threat_legion.git
 cd threat_legion
+./setup.sh
 ```
 
-### 2. Install Dependencies
+`setup.sh` installs dependencies, creates `.env` files from the templates, creates the database, and pushes the schema. If Postgres isn't running yet, start it first.
+
+If your Postgres needs a username/password or uses a non-default host, edit `artifacts/api-server/.env` after the script runs:
+
+```env
+DATABASE_URL=postgres://user:password@localhost/threat_legion
+```
+
+### 2. Start the dev servers
+
+```bash
+pnpm dev
+```
+
+Both the backend (port 5000) and frontend (port 3000) start together with a single command.
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### 3. Add your AI provider key
+
+Go to **Settings** in the dashboard, choose a provider (Anthropic, OpenAI, DeepSeek, or Groq), and paste your API key. The key is encrypted and stored in the database — it never leaves the server.
+
+---
+
+### Environment variable reference
+
+| File | Variable | Default | Description |
+|---|---|---|---|
+| `artifacts/api-server/.env` | `PORT` | `5000` | Backend HTTP port |
+| `artifacts/api-server/.env` | `NODE_ENV` | `development` | `development` or `production` |
+| `artifacts/api-server/.env` | `DATABASE_URL` | `postgres://localhost/threat_legion` | PostgreSQL connection string |
+| `artifacts/api-server/.env` | `GITHUB_TOKEN` | _(none)_ | GitHub token for higher API rate limits (optional) |
+| `artifacts/threat-legion/.env` | `PORT` | `3000` | Frontend dev server port |
+| `artifacts/threat-legion/.env` | `BASE_PATH` | `/` | Base URL path |
+
+> AI provider keys are entered per-user through the dashboard UI, not as environment variables.
+
+---
+
+### Manual setup (without setup.sh)
 
 ```bash
 pnpm install
-```
-
-### 3. Configure Environment Variables
-
-Create a `.env` file in the project root or export the following variables:
-
-```env
-# Server
-PORT=5000
-NODE_ENV=development
-BASE_PATH=/
-
-# Database
-DATABASE_URL=postgres://localhost/threat_legion
-```
-
-**Variable reference:**
-
-| Variable | Required | Description |
-|---|---|---|
-| `PORT` | Yes | HTTP server port |
-| `NODE_ENV` | No | `development` or `production` |
-| `BASE_PATH` | Yes | Base URL path (usually `/`) |
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `GITHUB_TOKEN` | No | GitHub token for higher API rate limits |
-
-> **Note:** AI provider keys (Anthropic, OpenAI, DeepSeek, Groq) are entered by each user through the dashboard UI — they are never set as server environment variables.
-
-### 4. Set Up the Database
-
-```bash
-# Create the database
+cp artifacts/api-server/.env.example artifacts/api-server/.env
+cp artifacts/threat-legion/.env.example artifacts/threat-legion/.env
 createdb threat_legion
-
-# Push schema (applies all migrations)
-pnpm --filter @workspace/db run push
+DATABASE_URL=postgres://localhost/threat_legion pnpm --filter @workspace/db run push
+pnpm dev
 ```
-
-### 5. Start the Development Servers
-
-Open two terminal windows:
-
-**Backend (Express API on port 5000):**
-```bash
-pnpm --filter @workspace/api-server run dev
-```
-
-**Frontend (Vite dev server on port 3000):**
-```bash
-pnpm --filter @workspace/threat-legion run dev
-```
-
-Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
@@ -244,6 +232,9 @@ The `ai-provider.ts` module normalizes tools and messages into a provider-agnost
 ## Available Scripts
 
 ```bash
+# Start both backend and frontend (recommended)
+pnpm dev
+
 # Type-check all packages
 pnpm run typecheck
 
@@ -256,10 +247,10 @@ pnpm --filter @workspace/db run push
 # Regenerate API client & Zod schemas from OpenAPI spec
 pnpm --filter @workspace/api-spec run codegen
 
-# Run the backend in development
+# Run only the backend
 pnpm --filter @workspace/api-server run dev
 
-# Run the frontend in development
+# Run only the frontend
 pnpm --filter @workspace/threat-legion run dev
 ```
 
