@@ -41,7 +41,28 @@ else
   info "$WEB_ENV already exists — skipping"
 fi
 
-# ── 5. Create the database ────────────────────────────────────────────────────
+# ── 5. Ensure PostgreSQL is running ──────────────────────────────────────────
+# Try to start Postgres via brew services if it isn't already listening on 5432
+if ! nc -z 127.0.0.1 5432 2>/dev/null; then
+  if command -v brew &>/dev/null; then
+    # Find whichever brew postgres formula is installed
+    PG_SVC=$(brew services list 2>/dev/null | awk '/^postgresql/ {print $1}' | head -1)
+    if [ -n "$PG_SVC" ]; then
+      info "Starting $PG_SVC via Homebrew..."
+      brew services start "$PG_SVC"
+      # Give it a moment to come up
+      sleep 2
+    else
+      warn "No Homebrew PostgreSQL service found. Install with: brew install postgresql@16"
+    fi
+  else
+    warn "PostgreSQL is not listening on port 5432. Please start it before continuing."
+  fi
+else
+  info "PostgreSQL is already running"
+fi
+
+# ── 6. Create the database ────────────────────────────────────────────────────
 # Read DATABASE_URL from the backend .env
 DB_URL=$(grep -E '^DATABASE_URL=' "$API_ENV" | cut -d= -f2-)
 DB_NAME=$(echo "$DB_URL" | sed 's|.*/||')
@@ -57,7 +78,7 @@ else
   warn "  createdb $DB_NAME"
 fi
 
-# ── 6. Push schema ────────────────────────────────────────────────────────────
+# ── 7. Push schema ────────────────────────────────────────────────────────────
 info "Pushing database schema..."
 # Export DATABASE_URL for drizzle-kit
 export DATABASE_URL="$DB_URL"

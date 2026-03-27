@@ -381,7 +381,7 @@ export default function Dashboard() {
                   <div key={i} className="h-24 bg-card/50 rounded-xl border border-white/5 animate-pulse" />
                 ))}
               </div>
-            ) : !scans?.length ? (
+            ) : !Array.isArray(scans) || !scans.length ? (
               <div className="bg-card border border-dashed border-white/10 rounded-2xl p-12 text-center flex flex-col items-center">
                 <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4">
                   <Shield className="w-8 h-8 text-muted-foreground" />

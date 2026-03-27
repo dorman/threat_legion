@@ -113,8 +113,8 @@ threat-legion/
 
 ### Prerequisites
 
-- **Node.js** 24+
-- **PostgreSQL** 16+
+- **Node.js** 20+ (24 recommended)
+- **PostgreSQL** 14+ (any recent version works)
 - **pnpm** is required (npm and yarn are blocked). Install it if needed: `npm install -g pnpm`
 
 ---
