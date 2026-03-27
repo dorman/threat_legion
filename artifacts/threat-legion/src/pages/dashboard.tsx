@@ -17,75 +17,13 @@ import {
 import type { CreateScanMutationError } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getScoreColor, cn } from "@/lib/utils";
-
-import { useDebouncer } from '@tanstack/pacer/react'
-import { useThrottler } from '@tanstack/pacer/react'
-
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog"
-
-// inside Dashboard():
-const [open, setOpen] = useState(true) // true = open on mount
-
-// JSX:
-<>
-  <Dialog open={open} onOpenChange={setOpen}>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>How to use Threat Legion</DialogTitle>
-      </DialogHeader>
-
-<p>
-  <br>Open the dashboard and go to AI Settings.</br>
-  <br>Choose your AI provider (Anthropic, OpenAI, DeepSeek, or Groq) and enter your API key.</br>
-  <br>Paste a public GitHub repository URL into the scan input (e.g. https://github.com/owner/repo).</br>
-  <br>Start the scan. The five agents will begin analyzing the repository in parallel.
-  <br>Watch findings stream in as each agent reports vulnerabilities.</br>
-  <br>Review the full report — each finding includes severity, affected file, line numbers, a code snippet, and remediation steps.</br>
-  </p>
-  
-    <Button onClick={() => setOpen(false)}>Close</Button>
-  </DialogContent>
-
-</Dialog>
-
-
-
-const [repoUrlError, setRepoUrlError] = useState("")
-
-const debouncedValidate = useDebouncer(
-  (url: string) => {
-    if (url && !url.includes("github.com")) {
-      setRepoUrlError("Only Github repos are allowed currently")
-    } else {
-      setRepoUrlError("")
-    }
-  },
-  {wait: 400}
-)
-
-// in the input onChange:
-onChange={(e) => {
-  setRepoUrlError(e.target.value)
-  setErrorStr("")
-  debouncedValidate.maybeExecute(e.target.value)
-}}
-
-const throttledCreateScan = useThrottler(
-  (url: string) => createScan({ data: { repoUrl: url } }),
-  { wait:3000, leading: true, trailing :false }
-)
-
-//. replace createScan({ data: { repoUrl } }) in handleScanSubmit:
-throttledCreateScan.maybeExecute(repoUrl)
-
-
-
+} from "@/components/ui/dialog";
 
 const AI_PROVIDERS = [
   { value: "anthropic", label: "Anthropic (Claude)" },
@@ -96,7 +34,7 @@ const AI_PROVIDERS = [
 type ProviderValue = (typeof AI_PROVIDERS)[number]["value"];
 
 const DEFAULT_MODELS: Record<ProviderValue, string> = {
-  anthropic: "claude-opus-4-5",
+  anthropic: "claude-sonnet-4-6",
   openai:    "gpt-4o",
   deepseek:  "deepseek-chat",
   groq:      "llama-3.3-70b-versatile",
@@ -116,6 +54,7 @@ export default function Dashboard() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
+  const [open, setOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<ProviderValue>("anthropic");
   const [apiKey, setApiKey] = useState("");
@@ -227,6 +166,23 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Welcome to Threat Legion</DialogTitle>
+            <DialogDescription>Get started in a few steps.</DialogDescription>
+          </DialogHeader>
+          <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+            <li>Open <strong>AI Provider Settings</strong> and enter your API key.</li>
+            <li>Choose your provider — Anthropic, OpenAI, DeepSeek, or Groq.</li>
+            <li>Paste a public GitHub repository URL into the scan input.</li>
+            <li>Click <strong>Start Autonomous Scan</strong> and watch findings stream in live.</li>
+            <li>Review the full report with severity ratings, code snippets, and fix instructions.</li>
+          </ol>
+          <Button className="w-full mt-2" onClick={() => setOpen(false)}>Get Started</Button>
+        </DialogContent>
+      </Dialog>
 
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

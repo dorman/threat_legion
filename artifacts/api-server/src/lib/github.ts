@@ -1,15 +1,3 @@
-import { AsyncRateLimiter } from '@tanstack/pacer'
-
-const githubLimiter = new AsyncRateLimiter(
-  async (fn: () => Promise<unknown>) => fn(),
-  { limit: 10, window: 1000 } // 10 req/sec - below Github's unauthenticared limit
-)
-
-// wrap each fetch call:
-const tree = await githubLimiter.maybeExecute(() =>
-  fetch('https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1')
-)
-
 const GITHUB_TOKEN = process.env["GITHUB_TOKEN"];
 
 const GITHUB_HEADERS: Record<string, string> = {
@@ -85,7 +73,7 @@ export async function checkRepoVisibility(
       }
     );
 
-    if (res.status === 404) return "private";
+    if (res.status === 404) return "not_found";
     if (!res.ok) return "not_found";
 
     const data = (await res.json()) as { private?: boolean };
