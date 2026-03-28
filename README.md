@@ -4,7 +4,7 @@
 
 ![Threat Legion Dashboard](_Intro_Project_Screenshot.png)
 
-Threat Legion uses a multi-agent AI architecture to analyze public GitHub repositories for security vulnerabilities in real time. Five specialized agents run in parallel — each focused on a distinct attack surface — and stream findings to your screen as they are discovered.
+Threat Legion uses a multi-agent AI architecture to analyze public codebases or projects for security vulnerabilities in real time. Five specialized agents run in parallel — each focused on a distinct attack surface — and stream findings to your screen as they are discovered.
 
 No per-scan fees. Bring your own key from Anthropic, OpenAI, DeepSeek, or Groq.
 ---
@@ -186,7 +186,6 @@ pnpm dev
 1. **Open the dashboard** and go to AI Settings.
 2. **Choose your AI provider** (Anthropic, OpenAI, DeepSeek, or Groq) and enter your API key.
 3. **Upload project to scan it** (regular folders and zips accepted of codebases).
-![Upload Files to scan](upload_folder.png)
 4. **Start the scan.** The five agents will begin analyzing the folder in parallel.
 5. **Watch findings stream in** as each agent reports vulnerabilities.
 ![Scan Progress](scan_progress.png)
@@ -198,7 +197,7 @@ pnpm dev
 
 ### Agent Architecture
 
-When a scan starts, a **coordinator agent** fetches the repository's file tree and categorizes each file by security domain. Files are then dispatched to five specialized agents that run in parallel:
+When a scan starts, a **coordinator agent** fetches the folder's file tree and categorizes each file by security domain. Files are then dispatched to five specialized agents that run in parallel:
 
 | Agent | Focuses On |
 |---|---|
