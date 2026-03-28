@@ -188,7 +188,7 @@ pnpm dev
 3. **Upload project to scan it** (regular folders and zips accepted of codebases).
 4. **Start the scan.** The five agents will begin analyzing the folder in parallel.
 5. **Watch findings stream in** as each agent reports vulnerabilities.
-![Scan Progress](scan_progress.png)
+![Scan](scan.png)
 6. **Review the full report** — each finding includes severity, affected file, line numbers, a code snippet, and remediation steps.
 
 ---
