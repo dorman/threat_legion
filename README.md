@@ -185,9 +185,9 @@ pnpm dev
 
 1. **Open the dashboard** and go to AI Settings.
 2. **Choose your AI provider** (Anthropic, OpenAI, DeepSeek, or Groq) and enter your API key.
-![New Scan](New_Scan.png)
-3. **Paste a public GitHub repository URL** into the scan input (e.g. `https://github.com/owner/repo`).
-4. **Start the scan.** The five agents will begin analyzing the repository in parallel.
+3. **Upload project to scan it** (regular folders and zips accepted of codebases).
+![Upload Files to scan](upload_folder.png)
+4. **Start the scan.** The five agents will begin analyzing the folder in parallel.
 5. **Watch findings stream in** as each agent reports vulnerabilities.
 ![Scan Progress](scan_progress.png)
 6. **Review the full report** — each finding includes severity, affected file, line numbers, a code snippet, and remediation steps.
