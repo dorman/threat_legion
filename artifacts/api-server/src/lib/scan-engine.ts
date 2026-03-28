@@ -1,6 +1,6 @@
 import { db, scansTable, findingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { getRepoFileTree, getFileContent } from "./github";
+import { getLocalFileTree, getLocalFileContent, searchLocalFiles, cleanupScanDir } from "./local-files";
 import { logger } from "./logger";
 import {
   type LLMConfig,
@@ -79,7 +79,7 @@ async function runConcurrently<T>(
 const COORDINATOR_TOOL: NormTool = {
   name: "categorize_files",
   description:
-    "Classify repository files into security analysis domains. Each file should appear in exactly one category.",
+    "Classify codebase files into security analysis domains. Each file should appear in exactly one category.",
   parameters: {
     type: "object",
     properties: {
@@ -137,7 +137,7 @@ function buildSpecialistTools(role: AgentRole): NormTool[] {
   return [
     {
       name: "read_file",
-      description: "Read the contents of a specific file in the repository",
+      description: "Read the contents of a specific file in the codebase",
       parameters: {
         type: "object",
         properties: { path: { type: "string", description: "File path to read" } },
@@ -146,7 +146,7 @@ function buildSpecialistTools(role: AgentRole): NormTool[] {
     },
     {
       name: "list_directory",
-      description: "List files in the repository",
+      description: "List files in the codebase",
       parameters: {
         type: "object",
         properties: {
@@ -157,7 +157,7 @@ function buildSpecialistTools(role: AgentRole): NormTool[] {
     },
     {
       name: "search_files",
-      description: "Search for a regex pattern across all repository files",
+      description: "Search for a regex pattern across all codebase files",
       parameters: {
         type: "object",
         properties: {
@@ -312,8 +312,7 @@ async function executeSpecialistTool(
   toolName: string,
   rawInput: unknown,
   allFiles: string[],
-  owner: string,
-  repo: string,
+  scanDir: string,
   scanId: number,
   findings: FindingData[],
   agentLabel: string,
@@ -322,7 +321,7 @@ async function executeSpecialistTool(
   const input = rawInput as SpecialistToolInput;
 
   if (toolName === "read_file") {
-    const content = await getFileContent(owner, repo, input.path ?? "");
+    const content = await getLocalFileContent(scanDir, input.path ?? "");
     onEvent({ type: "log", message: `[${agentLabel}] Reading ${input.path}` });
     return { result: content ?? "File not found or unreadable", isDone: false };
   }
@@ -340,21 +339,12 @@ async function executeSpecialistTool(
 
   if (toolName === "search_files") {
     try {
-      const regex = new RegExp(input.pattern ?? "", "gi");
-      const max = input.max_results ?? 20;
-      const matches: string[] = [];
-      for (const fp of allFiles.slice(0, 80)) {
-        if (matches.length >= max) break;
-        const content = await getFileContent(owner, repo, fp);
-        if (!content) continue;
-        const lines = content.split("\n");
-        for (let i = 0; i < lines.length; i++) {
-          regex.lastIndex = 0;
-          if (regex.test(lines[i]!) && matches.length < max) {
-            matches.push(`${fp}:${i + 1}: ${lines[i]!.trim()}`);
-          }
-        }
-      }
+      const matches = await searchLocalFiles(
+        scanDir,
+        allFiles,
+        input.pattern ?? "",
+        input.max_results ?? 20
+      );
       onEvent({
         type: "log",
         message: `[${agentLabel}] Searched for pattern — ${matches.length} matches`,
@@ -429,19 +419,19 @@ async function runCoordinator(
   files: string[],
   onEvent: (event: ScanEvent) => void
 ): Promise<FileCategories> {
-  onEvent({ type: "log", message: "Coordinator agent classifying repository structure..." });
+  onEvent({ type: "log", message: "Coordinator agent classifying codebase structure..." });
 
   try {
     const result = await callForcedTool<FileCategories>(config, {
       system:
-        "You are a security scan coordinator. Your only job is to classify a list of repository files into security analysis domains so that specialist agents can focus their expertise. Be precise and thorough — every file should be assigned to exactly one category.",
-      userMessage: `Classify these ${files.length} repository files into the four security analysis domains:
+        "You are a security scan coordinator. Your only job is to classify a list of codebase files into security analysis domains so that specialist agents can focus their expertise. Be precise and thorough — every file should be assigned to exactly one category.",
+      userMessage: `Classify these ${files.length} codebase files into the four security analysis domains:
 
 ${files.join("\n")}
 
 Rules:
 - auth: authentication/authorization/session/middleware/JWT/password/oauth/permission files
-- injection: database queries, ORM usage, request body handlers, file path handlers, templates  
+- injection: database queries, ORM usage, request body handlers, file path handlers, templates
 - dependency: package.json, requirements.txt, Gemfile, go.mod, Cargo.toml, composer.json, *.lock files
 - general: everything else (routes, utilities, config, tests, etc.)
 
@@ -460,7 +450,15 @@ Every file must appear in exactly one category.`,
       return result;
     }
   } catch (err) {
+    const msg = (err as Error)?.message ?? String(err);
+    const isAuthErr = msg.toLowerCase().includes("api key") || msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("authentication") || msg.toLowerCase().includes("401");
     logger.warn({ err }, "Coordinator agent failed — falling back to full-general");
+    onEvent({
+      type: "log",
+      message: isAuthErr
+        ? "[ALERT] Coordinator failed: Authentication error — verify your API key in Settings before scanning"
+        : `[ALERT] Coordinator failed (${msg.slice(0, 100)}) — assigning all files to general agent`,
+    });
   }
 
   return { auth: [], injection: [], dependency: [], general: files };
@@ -474,8 +472,8 @@ async function runSpecialistAgent(
   config: LLMConfig,
   spec: AgentSpec,
   allFiles: string[],
-  owner: string,
-  repo: string,
+  scanDir: string,
+  projectName: string,
   scanId: number,
   findings: FindingData[],
   onEvent: (event: ScanEvent) => void
@@ -493,7 +491,7 @@ async function runSpecialistAgent(
   try {
     await runAgentLoop(config, {
       system: SPECIALIST_PROMPTS[spec.role],
-      initialMessage: `You are the ${spec.label} agent in a multi-agent security scan of ${owner}/${repo}.
+      initialMessage: `You are the ${spec.label} agent in a multi-agent security scan of the uploaded codebase '${projectName}'.
 
 Your assigned files (${spec.assignedFiles.length}):
 ${spec.assignedFiles.join("\n")}
@@ -509,8 +507,7 @@ Start now.`,
           name,
           input,
           allFiles,
-          owner,
-          repo,
+          scanDir,
           scanId,
           findings,
           spec.label,
@@ -519,8 +516,15 @@ Start now.`,
       },
     });
   } catch (err) {
+    const msg = (err as Error)?.message ?? String(err);
+    const isAuthErr = msg.toLowerCase().includes("api key") || msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("authentication") || msg.toLowerCase().includes("401");
     logger.error({ err, agent: spec.label }, "Specialist agent failed");
-    onEvent({ type: "log", message: `[${spec.label}] API error — stopping agent` });
+    onEvent({
+      type: "log",
+      message: isAuthErr
+        ? `[ALERT] [${spec.label}] Authentication failed — check your API key in Settings`
+        : `[${spec.label}] API error: ${msg.slice(0, 120)}`,
+    });
   }
 
   onEvent({ type: "log", message: `[${spec.label}] Agent finished` });
@@ -533,8 +537,7 @@ Start now.`,
 async function runSynthesizer(
   config: LLMConfig,
   findings: FindingData[],
-  owner: string,
-  repo: string,
+  projectName: string,
   onEvent: (event: ScanEvent) => void
 ): Promise<{ score: number; summary: string }> {
   onEvent({ type: "log", message: "Synthesizer agent producing final security report..." });
@@ -555,7 +558,7 @@ async function runSynthesizer(
     const result = await callForcedTool<{ score: number; summary: string }>(config, {
       system:
         "You are a senior security analyst synthesising results from a multi-agent vulnerability scan. Produce an accurate, calibrated final assessment.",
-      userMessage: `Repository: ${owner}/${repo}
+      userMessage: `Project: ${projectName}
 
 Multi-agent scan results:
 - Critical findings: ${critCount}
@@ -579,7 +582,9 @@ Produce the final security score and executive summary. The score should start a
       };
     }
   } catch (err) {
+    const msg = (err as Error)?.message ?? String(err);
     logger.warn({ err }, "Synthesizer agent failed — using computed fallback");
+    onEvent({ type: "log", message: `[ALERT] Synthesizer failed: ${msg.slice(0, 120)} — using computed score` });
   }
 
   const score = Math.max(
@@ -588,7 +593,7 @@ Produce the final security score and executive summary. The score should start a
   );
   return {
     score,
-    summary: `Multi-agent scan of ${owner}/${repo} complete. Found ${findings.length} issue${findings.length !== 1 ? "s" : ""}: ${critCount} critical, ${highCount} high, ${medCount} medium, ${lowCount} low.`,
+    summary: `Multi-agent scan of '${projectName}' complete. Found ${findings.length} issue${findings.length !== 1 ? "s" : ""}: ${critCount} critical, ${highCount} high, ${medCount} medium, ${lowCount} low.`,
   };
 }
 
@@ -598,8 +603,8 @@ Produce the final security score and executive summary. The score should start a
 
 export async function runScan(
   scanId: number,
-  owner: string,
-  repo: string,
+  scanDir: string,
+  projectName: string,
   aiConfig: LLMConfig,
   onEvent: (event: ScanEvent) => void
 ): Promise<void> {
@@ -611,13 +616,13 @@ export async function runScan(
       .set({ status: "running", startedAt: new Date() })
       .where(eq(scansTable.id, scanId));
 
-    onEvent({ type: "log", message: `Starting multi-agent scan of ${owner}/${repo}...` });
-    const allFiles = await getRepoFileTree(owner, repo, 200);
-    onEvent({ type: "log", message: `Fetched ${allFiles.length} files from repository` });
+    onEvent({ type: "log", message: `Starting multi-agent scan of '${projectName}'...` });
+    const allFiles = await getLocalFileTree(scanDir, 200);
+    onEvent({ type: "log", message: `Found ${allFiles.length} files in uploaded codebase` });
 
     if (allFiles.length === 0) {
       throw new Error(
-        "Repository appears empty or inaccessible. Verify the repo is public and the URL is correct."
+        "No scannable files found. Ensure the uploaded folder contains source code files."
       );
     }
 
@@ -660,7 +665,7 @@ export async function runScan(
     await runConcurrently(
       agentSpecs.map(
         (spec) => () =>
-          runSpecialistAgent(aiConfig, spec, allFiles, owner, repo, scanId, allFindings, onEvent)
+          runSpecialistAgent(aiConfig, spec, allFiles, scanDir, projectName, scanId, allFindings, onEvent)
       ),
       3
     );
@@ -670,7 +675,7 @@ export async function runScan(
       message: `All ${agentCount} agents finished. ${allFindings.length} total finding${allFindings.length !== 1 ? "s" : ""} collected.`,
     });
 
-    const { score, summary } = await runSynthesizer(aiConfig, allFindings, owner, repo, onEvent);
+    const { score, summary } = await runSynthesizer(aiConfig, allFindings, projectName, onEvent);
 
     const criticalCount = allFindings.filter((f) => f.severity === "critical").length;
     const highCount = allFindings.filter((f) => f.severity === "high").length;
@@ -704,5 +709,8 @@ export async function runScan(
       type: "error",
       message: `Scan failed: ${(err as Error).message}`,
     });
+  } finally {
+    // Clean up uploaded files after scan completes (success or failure)
+    await cleanupScanDir(scanId);
   }
 }

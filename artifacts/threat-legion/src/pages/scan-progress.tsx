@@ -47,9 +47,9 @@ export default function ScanProgress() {
             
             <div className="space-y-4 mb-8">
               <div>
-                <p className="text-sm text-muted-foreground">Target Repository</p>
+                <p className="text-sm text-muted-foreground">Project</p>
                 <p className="font-mono text-sm mt-1 bg-secondary/50 p-2 rounded border border-white/5 truncate">
-                  {scan ? `${scan.repoOwner}/${scan.repoName}` : "Loading..."}
+                  {scan ? scan.repoName : "Loading..."}
                 </p>
               </div>
               
@@ -131,7 +131,7 @@ export default function ScanProgress() {
           >
             <div className="text-primary opacity-80 mb-4">
               [SYSTEM] Starting Threat Legion Autonomous Agent...<br/>
-              [SYSTEM] Target: {scan?.repoUrl || 'Loading...'}<br/>
+              [SYSTEM] Project: {scan?.repoName || 'Loading...'}<br/>
               [SYSTEM] Model: Claude 3.5 Sonnet<br/>
               [SYSTEM] Status: Initializing sandbox...
             </div>

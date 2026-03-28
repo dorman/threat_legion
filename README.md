@@ -141,7 +141,7 @@ DATABASE_URL=postgres://user:password@localhost/threat_legion
 pnpm dev
 ```
 
-Both the backend (port 5000) and frontend (port 3000) start together with a single command.
+Both the backend (port 8080) and frontend (port 3000) start together with a single command.
 
 Open [http://localhost:3000](http://localhost:3000).
 
@@ -155,7 +155,7 @@ Go to **Settings** in the dashboard, choose a provider (Anthropic, OpenAI, DeepS
 
 | File | Variable | Default | Description |
 |---|---|---|---|
-| `artifacts/api-server/.env` | `PORT` | `5000` | Backend HTTP port |
+| `artifacts/api-server/.env` | `PORT` | `8080` | Backend HTTP port |
 | `artifacts/api-server/.env` | `NODE_ENV` | `development` | `development` or `production` |
 | `artifacts/api-server/.env` | `DATABASE_URL` | `postgres://localhost/threat_legion` | PostgreSQL connection string |
 | `artifacts/api-server/.env` | `GITHUB_TOKEN` | _(none)_ | GitHub token for higher API rate limits (optional) |
@@ -181,13 +181,15 @@ pnpm dev
 
 ## How to Use
 
-![New Scan](New_Scan.png)
+
 
 1. **Open the dashboard** and go to AI Settings.
 2. **Choose your AI provider** (Anthropic, OpenAI, DeepSeek, or Groq) and enter your API key.
+![New Scan](New_Scan.png)
 3. **Paste a public GitHub repository URL** into the scan input (e.g. `https://github.com/owner/repo`).
 4. **Start the scan.** The five agents will begin analyzing the repository in parallel.
 5. **Watch findings stream in** as each agent reports vulnerabilities.
+![Scan Progress](scan_progress.png)
 6. **Review the full report** — each finding includes severity, affected file, line numbers, a code snippet, and remediation steps.
 
 ---
