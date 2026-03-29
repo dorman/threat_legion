@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 
-export type AIProvider = "anthropic" | "openai" | "deepseek" | "groq";
+export type AIProvider = "anthropic" | "openai" | "deepseek" | "groq" | "minimax" | "gemini";
 
 export interface LLMConfig {
   provider: AIProvider;
@@ -24,11 +24,15 @@ const DEFAULT_MODELS: Record<AIProvider, string> = {
   openai: "gpt-4o",
   deepseek: "deepseek-chat",
   groq: "llama-3.3-70b-versatile",
+  minimax: "MiniMax-M2.7",
+  gemini: "gemini-2.0-flash",
 };
 
 const OPENAI_BASE_URLS: Partial<Record<AIProvider, string>> = {
   deepseek: "https://api.deepseek.com",
   groq: "https://api.groq.com/openai/v1",
+  minimax: "https://api.minimax.io/v1",
+  gemini: "https://generativelanguage.googleapis.com/v1beta/openai/",
 };
 
 function getModel(config: LLMConfig): string {

@@ -7,7 +7,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { PromoVideo } from "@/components/PromoVideo";
 
-const GITHUB_REPO = "https://github.com/threatlegion/threat-legion";
+const GITHUB_REPO = "https://github.com/dorman/threat_legion";
 
 const FEATURES = [
   {
@@ -31,7 +31,7 @@ const BYOK_CARDS = [
   {
     icon: <Key className="w-6 h-6 text-primary" />,
     title: "Any major provider",
-    desc: "Plug in your Anthropic, OpenAI, DeepSeek, or Groq API key. Threat Legion adapts the multi-agent protocol to whichever API you prefer.",
+    desc: "Plug in your Anthropic, OpenAI, DeepSeek, Groq, or Gemini API key. Threat Legion adapts the multi-agent protocol to whichever API you prefer.",
   },
   {
     icon: <Users className="w-6 h-6 text-primary" />,
@@ -83,7 +83,7 @@ export default function Home() {
               </h1>
 
               <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-                A multi-agent AI system that scans your <strong>GitHub repositories</strong> for
+                A multi-agent AI system that scans your <strong>codebase/files</strong> for
                 security vulnerabilities — with real-time reasoning, severity ranking, and code-level remediation.
                 Bring your own API key. It is a web app built on entirely React/Typescript tech stack which runs locally in the browser
               </p>
@@ -155,7 +155,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Your model, your rules</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Use the AI provider you already trust and pay for. Threat Legion works with
-              Anthropic, OpenAI, DeepSeek, and Groq — you stay in full control of your data and costs.
+              Anthropic, OpenAI, DeepSeek, Groq, and Gemini — you stay in full control of your data and costs.
             </p>
           </div>
 

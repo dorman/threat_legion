@@ -1,6 +1,8 @@
 # Threat Legion
 
-**An agentic, open-source vulnerability scanner for GitHub repositories — powered by your own AI API key.**
+**An agentic, open-source vulnerability scanner for codebases — powered by your own AI API key.**
+
+1[Threat Legion Logo](TLLogo.png)
 
 ![Threat Legion Dashboard](_Intro_Project_Screenshot.png)
 
@@ -12,10 +14,10 @@ No per-scan fees. Bring your own key from Anthropic, OpenAI, DeepSeek, or Groq.
 ## Features
 
 - **Five-Agent Scanner** — A coordinator agent routes each file to a specialist: authentication, injection, secrets, dependencies, or general security.
-- **Bring Your Own Key (BYOK)** — Connect Anthropic, OpenAI, DeepSeek, or Groq. Your key is stored encrypted and never leaves the server.
+- **Bring Your Own Key (BYOK)** — Connect Anthropic, OpenAI, DeepSeek, Groq, or Gemini. Your key is stored encrypted and never leaves the server.
 - **Real-Time Streaming** — Findings stream to the UI via Server-Sent Events as each agent reports them.
 - **Actionable Remediation** — Every finding includes a code snippet, file path, line numbers, severity rating, and step-by-step fix instructions.
-- **Public Repo Support** — Scan any public GitHub repository by URL.
+- **Public Repo Support** — Scan any local codebase once uploaded.
 - **Risk Scoring** — Each scan produces a risk score and severity breakdown (critical / high / medium / low).
 
 ---
@@ -82,7 +84,6 @@ threat-legion/
 │   │       └── lib/
 │   │           ├── scan-engine.ts   # Five-agent orchestrator
 │   │           ├── ai-provider.ts   # Multi-provider LLM abstraction
-│   │           ├── github.ts        # GitHub API (file tree, content)
 │   │           └── scan-bus.ts      # SSE event publishing
 │   │
 │   └── threat-legion/           # React frontend
@@ -184,7 +185,7 @@ pnpm dev
 
 
 1. **Open the dashboard** and go to AI Settings.
-2. **Choose your AI provider** (Anthropic, OpenAI, DeepSeek, or Groq) and enter your API key.
+2. **Choose your AI provider** (Anthropic, OpenAI, DeepSeek, Groq, or Gemini) and enter your API key.
 3. **Upload project to scan it** (regular folders and zips accepted of codebases).
 4. **Start the scan.** The five agents will begin analyzing the folder in parallel.
 5. **Watch findings stream in** as each agent reports vulnerabilities.

@@ -66,6 +66,8 @@ const AI_PROVIDERS = [
   { value: "openai",    label: "OpenAI (GPT-4)" },
   { value: "deepseek",  label: "DeepSeek" },
   { value: "groq",      label: "Groq" },
+  { value: "minimax",   label: "MiniMax" },
+  { value: "gemini",    label: "Google Gemini" },
 ] as const;
 type ProviderValue = (typeof AI_PROVIDERS)[number]["value"];
 
@@ -74,6 +76,8 @@ const DEFAULT_MODELS: Record<ProviderValue, string> = {
   openai:    "gpt-4o",
   deepseek:  "deepseek-chat",
   groq:      "llama-3.3-70b-versatile",
+  minimax:   "MiniMax-M2.7",
+  gemini:    "gemini-2.0-flash",
 };
 
 const PROVIDER_KEY_HINTS: Record<ProviderValue, string> = {
@@ -81,6 +85,8 @@ const PROVIDER_KEY_HINTS: Record<ProviderValue, string> = {
   openai:    "sk-...",
   deepseek:  "sk-...",
   groq:      "gsk_...",
+  minimax:   "eyJ...",
+  gemini:    "AIza...",
 };
 
 export default function Dashboard() {

@@ -51,7 +51,7 @@ router.get("/auth/me", async (_req: Request, res: Response) => {
   }
 });
 
-const VALID_PROVIDERS = ["anthropic", "openai", "deepseek", "groq"] as const;
+const VALID_PROVIDERS = ["anthropic", "openai", "deepseek", "groq", "minimax", "gemini"] as const;
 type ValidProvider = (typeof VALID_PROVIDERS)[number];
 
 router.put("/auth/ai-settings", async (req: Request, res: Response) => {
