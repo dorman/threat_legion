@@ -39,6 +39,35 @@ function getModel(config: LLMConfig): string {
   return config.model ?? DEFAULT_MODELS[config.provider];
 }
 
+// ============================================================
+// RETRY WITH EXPONENTIAL BACKOFF
+// Retries on 429 rate-limit errors up to maxRetries times
+// ============================================================
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 4,
+  baseDelayMs = 3000
+): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const msg = String(err);
+      const isRateLimit =
+        msg.includes("429") ||
+        msg.toLowerCase().includes("rate limit") ||
+        msg.toLowerCase().includes("too many requests") ||
+        msg.toLowerCase().includes("ratelimit");
+      if (!isRateLimit || attempt === maxRetries) throw err;
+      const delayMs = baseDelayMs * Math.pow(2, attempt);
+      await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  // unreachable, but satisfies TypeScript
+  throw new Error("withRetry exhausted");
+}
+
 function toAnthropicTool(t: NormTool): Anthropic.Tool {
   return {
     name: t.name,
@@ -76,14 +105,16 @@ export async function callForcedTool<T>(
 
   if (config.provider === "anthropic") {
     const client = new Anthropic({ apiKey: config.apiKey });
-    const response = await client.messages.create({
-      model,
-      max_tokens: params.maxTokens,
-      system: params.system,
-      tools: [toAnthropicTool(params.tool)],
-      tool_choice: { type: "tool", name: params.tool.name },
-      messages: [{ role: "user", content: params.userMessage }],
-    });
+    const response = await withRetry(() =>
+      client.messages.create({
+        model,
+        max_tokens: params.maxTokens,
+        system: params.system,
+        tools: [toAnthropicTool(params.tool)],
+        tool_choice: { type: "tool", name: params.tool.name },
+        messages: [{ role: "user", content: params.userMessage }],
+      })
+    );
     const block = response.content.find((b) => b.type === "tool_use");
     if (block && "input" in block) return block.input as T;
     return null;
@@ -94,16 +125,18 @@ export async function callForcedTool<T>(
     apiKey: config.apiKey,
     baseURL: OPENAI_BASE_URLS[config.provider],
   });
-  const response = await client.chat.completions.create({
-    model,
-    max_tokens: params.maxTokens,
-    messages: [
-      { role: "system", content: params.system },
-      { role: "user", content: params.userMessage },
-    ],
-    tools: [toOpenAITool(params.tool)],
-    tool_choice: { type: "function", function: { name: params.tool.name } },
-  });
+  const response = await withRetry(() =>
+    client.chat.completions.create({
+      model,
+      max_tokens: params.maxTokens,
+      messages: [
+        { role: "system", content: params.system },
+        { role: "user", content: params.userMessage },
+      ],
+      tools: [toOpenAITool(params.tool)],
+      tool_choice: { type: "function", function: { name: params.tool.name } },
+    })
+  );
   const toolCall = response.choices[0]?.message?.tool_calls?.[0];
   if (toolCall && toolCall.type === "function") {
     return JSON.parse(toolCall.function.arguments) as T;
@@ -158,13 +191,15 @@ async function runAnthropicAgentLoop(
   while (!done && iterations < params.maxIterations) {
     iterations++;
 
-    const response = await client.messages.create({
-      model,
-      max_tokens: params.maxTokens,
-      system: params.system,
-      tools,
-      messages,
-    });
+    const response = await withRetry(() =>
+      client.messages.create({
+        model,
+        max_tokens: params.maxTokens,
+        system: params.system,
+        tools,
+        messages,
+      })
+    );
 
     messages.push({
       role: "assistant",
@@ -217,12 +252,14 @@ async function runOpenAIAgentLoop(
   while (!done && iterations < params.maxIterations) {
     iterations++;
 
-    const response = await client.chat.completions.create({
-      model,
-      max_tokens: params.maxTokens,
-      messages,
-      tools,
-    });
+    const response = await withRetry(() =>
+      client.chat.completions.create({
+        model,
+        max_tokens: params.maxTokens,
+        messages,
+        tools,
+      })
+    );
 
     const choice = response.choices[0];
     if (!choice) break;

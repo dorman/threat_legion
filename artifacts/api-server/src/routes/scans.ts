@@ -191,7 +191,12 @@ router.post("/scans", (req: Request, res: Response): void => {
       projectName = path.basename(zipFiles[0]!.originalname, ".zip") || "project";
     } else {
       // webkitRelativePath looks like "myproject/src/index.ts" — take first segment
-      const firstPath = folderFiles[0]!.originalname.replace(/\\/g, "/");
+      // Skip dot-files (e.g. .git-blame-ignore-revs) when picking the project name
+      const nonDotFile = folderFiles.find((f) => {
+        const firstSeg = f.originalname.replace(/\\/g, "/").split("/")[0] ?? "";
+        return firstSeg && !firstSeg.startsWith(".");
+      });
+      const firstPath = (nonDotFile ?? folderFiles[0]!).originalname.replace(/\\/g, "/");
       const rootSegment = firstPath.split("/")[0];
       if (rootSegment) projectName = rootSegment;
     }
