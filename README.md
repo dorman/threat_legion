@@ -2,9 +2,7 @@
 
 **An agentic, open-source vulnerability scanner for codebases — powered by your own AI API key.**
 
-![Threat Legion Logo](TLLogo.png)
-
-![Threat Legion Dashboard](_Intro_Project_Screenshot.png)
+![Threat Legion Dashboard](TLFront.png)
 
 Threat Legion uses a multi-agent AI architecture to analyze public codebases or projects for security vulnerabilities in real time. Five specialized agents run in parallel — each focused on a distinct attack surface — and stream findings to your screen as they are discovered.
 
