@@ -2,7 +2,7 @@
 
 **An agentic, open-source vulnerability scanner for codebases — powered by your own AI API key.**
 
-1[Threat Legion Logo](TLLogo.png)
+![Threat Legion Logo](TLLogo.png)
 
 ![Threat Legion Dashboard](_Intro_Project_Screenshot.png)
 
