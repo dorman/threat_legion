@@ -1,8 +1,5 @@
-# Threat Legion
-
-**Security for apps built with Cursor, agents, and RAG — powered by your own AI API key.**
-
 ![Threat Legion logo](TLLogo.png)
+**Security for apps built with Cursor, agents, and RAG — powered by your own AI API key.**
 
 Threat Legion scans AI-assisted codebases for the risks that generic scanners miss: prompt injection, RAG tenant leaks, over-powered agent tools, and secrets in Cursor rules. Upload a project folder or ZIP, or run **`threat-legion scan --ci`** in your pipeline to scan only changed files.
 
