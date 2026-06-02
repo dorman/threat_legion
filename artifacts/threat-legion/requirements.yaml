@@ -10,6 +10,6 @@ images:
     aspect_ratio: "16:9"
 
 notes:
-  - "The frontend relies on the generated hooks from @workspace/api-client-react."
+  - "The frontend uses fetch functions and lightweight React hooks from @workspace/api-client-react."
   - "GitHub OAuth flows redirect the browser to /api/auth/github."
   - "SSE streams are consumed natively using EventSource in the custom useScanStream hook."

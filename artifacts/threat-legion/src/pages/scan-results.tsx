@@ -1,7 +1,7 @@
 import { useRoute, Link } from "wouter";
 import { ArrowLeft, ShieldCheck, ShieldAlert, Shield, FileText, Code2, AlertTriangle, AlertCircle, Info, ChevronRight, Lock, Crown, Folder } from "lucide-react";
 import { format } from "date-fns";
-import { useGetScan, getGetScanQueryKey, useGetMe, getGetMeQueryKey, type Finding } from "@workspace/api-client-react";
+import { useGetScan, useGetMe, type Finding } from "@workspace/api-client-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { getScoreColor, getSeverityColor, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,8 @@ export default function ScanResults() {
   const [, params] = useRoute("/scans/:id");
   const scanId = params?.id ? parseInt(params.id) : undefined;
   
-  const { data: scan, isLoading, isError } = useGetScan(scanId!, {
-    query: { queryKey: getGetScanQueryKey(scanId!), enabled: !!scanId, retry: false }
-  });
-  const { data: user } = useGetMe({
-    query: { queryKey: getGetMeQueryKey(), retry: false }
-  });
+  const { data: scan, isLoading, isError } = useGetScan(scanId ?? 0, { enabled: !!scanId });
+  const { data: user } = useGetMe();
   const isFree = !user?.tier || user.tier === "free";
 
   if (isLoading) {

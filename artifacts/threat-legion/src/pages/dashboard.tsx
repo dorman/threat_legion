@@ -12,9 +12,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import {
   useGetMe, useListScans, useDeleteScan, useSaveAiSettings,
-  getGetMeQueryKey, getListScansQueryKey,
 } from "@workspace/api-client-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getScoreColor, cn } from "@/lib/utils";
 import {
   Dialog,
@@ -93,7 +91,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [errorStr, setErrorStr] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const queryClient = useQueryClient();
+  const [isCreating, setIsCreating] = useState(false);
 
   // Upload state
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
@@ -111,57 +109,50 @@ export default function Dashboard() {
   const [showKey, setShowKey] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
-  const { data: user, isLoading: isUserLoading } = useGetMe({
-    query: { queryKey: getGetMeQueryKey(), retry: false }
-  });
+  const { data: user, isLoading: isUserLoading, refetch: refetchUser } = useGetMe();
 
-  const { data: scans, isLoading: isScansLoading } = useListScans({
-    query: { queryKey: getListScansQueryKey() }
-  });
+  const { data: scans, isLoading: isScansLoading, refetch: refetchScans } = useListScans();
 
-  // Upload + start scan (bypasses generated JSON client — uses FormData)
-  const { mutate: createScan, isPending: isCreating } = useMutation({
-    mutationFn: async (formData: FormData) => {
+  const createScan = async (formData: FormData) => {
+    setIsCreating(true);
+    setErrorStr("");
+    try {
       const res = await fetch("/api/scans", { method: "POST", body: formData });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Upload failed" }));
-        throw err;
+        if (err?.code === "NO_AI_KEY") setSettingsOpen(true);
+        setErrorStr(err?.error ?? "Failed to start scan.");
+        return;
       }
-      return res.json() as Promise<{ id: number }>;
-    },
-    onSuccess: (data) => {
+      const data = await res.json() as { id: number };
       setLocation(`/scans/${data.id}/progress`);
-    },
-    onError: (err: { error?: string; code?: string }) => {
-      if (err?.code === "NO_AI_KEY") setSettingsOpen(true);
-      setErrorStr(err?.error ?? "Failed to start scan.");
-    },
-  });
+    } catch {
+      setErrorStr("Failed to start scan.");
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const { mutate: deleteScan, isPending: isDeleting } = useDeleteScan({
-    mutation: {
-      onSuccess: () => {
-        setConfirmDeleteId(null);
-        void queryClient.invalidateQueries({ queryKey: getListScansQueryKey() });
-      }
-    }
+    onSuccess: () => {
+      setConfirmDeleteId(null);
+      void refetchScans();
+    },
   });
 
   const [settingsError, setSettingsError] = useState("");
   const { mutate: saveSettings, isPending: isSavingSettings } = useSaveAiSettings({
-    mutation: {
-      onSuccess: (updatedUser) => {
-        void queryClient.setQueryData(getGetMeQueryKey(), updatedUser);
-        setApiKey("");
-        setSettingsError("");
-        setSettingsSaved(true);
-        setTimeout(() => setSettingsSaved(false), 3000);
-      },
-      onError: (err) => {
-        const data = (err as { data?: { error?: string } }).data;
-        setSettingsError(data?.error ?? "Failed to save API key. Is the server running?");
-      },
-    }
+    onSuccess: () => {
+      void refetchUser();
+      setApiKey("");
+      setSettingsError("");
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 3000);
+    },
+    onError: (err: unknown) => {
+      const data = (err as { data?: { error?: string } }).data;
+      setSettingsError(data?.error ?? "Failed to save API key. Is the server running?");
+    },
   });
 
   useEffect(() => {

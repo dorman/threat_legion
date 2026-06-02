@@ -1,109 +1,74 @@
 # Threat Legion
 
-**An agentic, open-source vulnerability scanner for codebases — powered by your own AI API key.**
+**Security for apps built with Cursor, agents, and RAG — powered by your own AI API key.**
 
 ![Threat Legion logo](TLLogo.png)
 
-Threat Legion uses a multi-agent AI architecture to analyze public codebases or projects for security vulnerabilities in real time. Five specialized agents run in parallel — each focused on a distinct attack surface — and stream findings to your screen as they are discovered.
+Threat Legion scans AI-assisted codebases for the risks that generic scanners miss: prompt injection, RAG tenant leaks, over-powered agent tools, and secrets in Cursor rules. Upload a project folder or ZIP, or run **`threat-legion scan --ci`** in your pipeline to scan only changed files.
 
-No per-scan fees. Bring your own key from Anthropic, OpenAI, DeepSeek, or Groq.
+Seven specialist agents review auth on LLM routes, prompt surfaces, retrieval code, MCP/tool configs, secrets, and AI stack dependencies. Findings stream live via Server-Sent Events.
+
+No per-scan fees. Bring your own key from Anthropic, OpenAI, DeepSeek, Groq, MiniMax, or Gemini.
+
 ---
 
 ## Features
 
-- **Five-Agent Scanner** — A coordinator agent routes each file to a specialist: authentication, injection, secrets, dependencies, or general security.
-- **Bring Your Own Key (BYOK)** — Connect Anthropic, OpenAI, DeepSeek, Groq, or Gemini. Your key is stored encrypted and never leaves the server.
-- **Real-Time Streaming** — Findings stream to the UI via Server-Sent Events as each agent reports them.
-- **Actionable Remediation** — Every finding includes a code snippet, file path, line numbers, severity rating, and step-by-step fix instructions.
-- **Public Repo Support** — Scan any local codebase once uploaded.
-- **Risk Scoring** — Each scan produces a risk score and severity breakdown (critical / high / medium / low).
+- **AI-app scan profile** — Seven specialists tuned for Cursor, coding agents, and RAG pipelines (not generic OWASP checkbox scans).
+- **Upload or CI delta** — Full project scans from the dashboard; changed-file scans via CLI and GitHub Action.
+- **Bring Your Own Key (BYOK)** — Your key is encrypted server-side and only used during scans.
+- **Real-time streaming** — Findings appear in the UI as each specialist reports them.
+- **Actionable remediation** — Severity, file path, line numbers, code snippets, and fix guidance.
+- **AI surface detection** — Prioritizes `.cursor/`, `AGENTS.md`, RAG routes, and tool/MCP configs.
 
 ---
 
 ## Tech Stack
 
 ### Frontend
-| Technology | Version | Purpose |
-|---|---|---|
-| React | 19.1 | UI framework |
-| Vite | 7.3 | Build tool & dev server |
-| TypeScript | 5.9 | Type safety |
-| TailwindCSS | 4.1 | Utility-first styling |
-| Radix UI | latest | Accessible headless components |
-| TanStack React Query | 5.90 | Data fetching & caching |
-| Wouter | 3.3 | Lightweight client-side routing |
-| React Hook Form + Zod | 7.55 / 3 | Form handling & validation |
-| Framer Motion | 12.35 | Animations |
-| Recharts | 2.15 | Data visualization |
-| Sonner | 2.0 | Toast notifications |
-| Lucide React | 0.545 | Icons |
-| Tanstack Pacer | 0.20.0 | Debouncer and Throttling |
+| Technology | Purpose |
+|---|---|
+| React 19 | UI framework |
+| Vite 7 | Build tool & dev server |
+| TypeScript | Type safety |
+| TailwindCSS 4 | Styling |
+| Radix UI | Accessible components |
+| Wouter | Client-side routing |
+| React Hook Form + Zod | Forms & validation |
 
 ### Backend
-| Technology | Version | Purpose |
-|---|---|---|
-| Node.js | 24 | Runtime |
-| Express | 5 | HTTP server & routing |
-| TypeScript | 5.9 | Type safety |
-| PostgreSQL | 16 | Primary database |
-| Drizzle ORM | 0.45 | Type-safe ORM & migrations |
-| Pino | 9 | Structured logging |
-| Zod | 4 | Schema validation |
-
-### AI / LLM
-| Provider | Default Model |
+| Technology | Purpose |
 |---|---|
-| Anthropic | claude-sonnet-4-6 |
-| OpenAI | gpt-4o |
-| DeepSeek | deepseek-chat |
-| Groq | llama-3.3-70b-versatile |
+| Node.js + Express 5 | API server |
+| PostgreSQL + Drizzle ORM | Database & migrations |
+| Pino | Structured logging |
 
-### Tooling
-| Tool | Purpose |
+### Scan engine
+| Package | Purpose |
 |---|---|
-| pnpm workspaces | Monorepo package management |
-| esbuild | Production bundle |
-| Orval | OpenAPI → React Query + Zod codegen |
-| tsx | TypeScript execution in dev |
+| `lib/scan-core` | Shared scan orchestrator with `ai-app` and `general` profiles |
+| `artifacts/cli` | `threat-legion scan` for local and CI use |
+
+### AI providers (BYOK)
+Anthropic · OpenAI · DeepSeek · Groq · MiniMax · Google Gemini
 
 ---
 
 ## Project Structure
 
 ```
-threat-legion/
+threat_legion/
 ├── artifacts/
-│   ├── api-server/              # Express backend
-│   │   └── src/
-│   │       ├── app.ts           # Express setup, CORS, middleware
-│   │       ├── index.ts         # Server entry point
-│   │       ├── routes/          # auth, scans, subscription, health
-│   │       ├── middlewares/     # Auth middleware
-│   │       └── lib/
-│   │           ├── scan-engine.ts   # Five-agent orchestrator
-│   │           ├── ai-provider.ts   # Multi-provider LLM abstraction
-│   │           └── scan-bus.ts      # SSE event publishing
-│   │
-│   └── threat-legion/           # React frontend
-│       └── src/
-│           ├── pages/           # home, dashboard, scan-progress, scan-results, pricing
-│           ├── components/      # UI components + Radix UI wrappers
-│           ├── hooks/           # Custom React hooks
-│           └── lib/             # Utilities
-│
+│   ├── api-server/          # Express backend (upload scans, SSE, auth)
+│   ├── cli/                 # threat-legion CLI
+│   └── threat-legion/       # React dashboard
 ├── lib/
-│   ├── db/                      # Drizzle schema + migrations
-│   │   └── src/schema/          # users, scans, findings, sessions
-│   ├── api-spec/                # OpenAPI 3.1 specification
-│   ├── api-client-react/        # Auto-generated React Query hooks
-│   ├── api-zod/                 # Auto-generated Zod schemas
-│   ├── integrations-anthropic-ai/   # Anthropic SDK helpers
-│   └── integrations-openrouter-ai/  # OpenRouter integration
-│
-├── scripts/                     # Utility scripts
-├── pnpm-workspace.yaml
-├── tsconfig.base.json
-└── package.json
+│   ├── scan-core/           # AI-app scan engine + profiles
+│   ├── db/                  # Drizzle schema
+│   ├── api-spec/            # OpenAPI spec + Orval codegen
+│   ├── api-client-react/    # Fetch client + lightweight React hooks
+│   └── api-zod/             # Generated Zod schemas
+└── .github/actions/scan/    # Composite GitHub Action
 ```
 
 ---
@@ -113,186 +78,92 @@ threat-legion/
 ### Prerequisites
 
 - **Node.js** 20+ (24 recommended)
-- **PostgreSQL** 14+ (any recent version works)
-- **pnpm** is required (npm and yarn are blocked). Install it if needed: `npm install -g pnpm`
+- **PostgreSQL** 14+
+- **pnpm** (required — npm/yarn are blocked)
 
----
-
-### 1. Clone and run setup
+### Quick start
 
 ```bash
 git clone https://github.com/dorman/threat_legion.git
 cd threat_legion
 ./setup.sh
-```
-
-`setup.sh` installs dependencies, creates `.env` files from the templates, creates the database, and pushes the schema. If Postgres isn't running yet, start it first.
-
-If your Postgres needs a username/password or uses a non-default host, edit `artifacts/api-server/.env` after the script runs:
-
-```env
-DATABASE_URL=postgres://user:password@localhost/threat_legion
-```
-
-### 2. Start the dev servers
-
-```bash
 pnpm dev
 ```
 
-Both the backend (port 8080) and frontend (port 3000) start together with a single command.
+Open [http://localhost:3000](http://localhost:3000). The API runs on port **8080** by default (macOS often reserves 5000 for AirPlay).
 
-Open [http://localhost:3000](http://localhost:3000).
+### Configure your AI key
 
-### 3. Add your AI provider key
+In the dashboard **AI Provider Settings**, choose a provider and paste your API key. It is encrypted in the database and never returned to the browser.
 
-Go to **Settings** in the dashboard, choose a provider (Anthropic, OpenAI, DeepSeek, or Groq), and paste your API key. The key is encrypted and stored in the database — it never leaves the server.
+### Scan a project
+
+1. Upload a folder or ZIP (include `.cursor/`, agent configs, and RAG code if present).
+2. Click **Run AI-App Scan**.
+3. Watch specialists report findings live.
+4. Review the full report with severity and remediation.
+
+![Scan](scan.png)
+
+### CI / pull requests
+
+```bash
+pnpm threat-legion scan --ci --base origin/main --head HEAD
+```
+
+See `.github/workflows/delta-scan.example.yml` for a GitHub Action template.
 
 ---
 
-### Environment variable reference
+## Environment variables
 
 | File | Variable | Default | Description |
 |---|---|---|---|
 | `artifacts/api-server/.env` | `PORT` | `8080` | Backend HTTP port |
-| `artifacts/api-server/.env` | `NODE_ENV` | `development` | `development` or `production` |
-| `artifacts/api-server/.env` | `DATABASE_URL` | `postgres://localhost/threat_legion` | PostgreSQL connection string |
-| `artifacts/api-server/.env` | `GITHUB_TOKEN` | _(none)_ | GitHub token for higher API rate limits (optional) |
-| `artifacts/threat-legion/.env` | `PORT` | `3000` | Frontend dev server port |
-| `artifacts/threat-legion/.env` | `BASE_PATH` | `/` | Base URL path |
+| `artifacts/api-server/.env` | `DATABASE_URL` | `postgres://localhost/threat_legion` | PostgreSQL connection |
+| `artifacts/threat-legion/.env` | `API_PORT` | `8080` | Proxy target for `/api` in local dev |
 
-> AI provider keys are entered per-user through the dashboard UI, not as environment variables.
+AI provider keys are set per user in the dashboard, not via environment variables.
 
 ---
 
-### Manual setup (without setup.sh)
+## How the scanner works
+
+1. **Coordinator** classifies files into AI-app domains (auth, injection, RAG, agents, secrets, deps, general).
+2. **Seven specialists** run in parallel (max 3 concurrent), each with domain-specific prompts.
+3. **AI surface merge** — `.cursor/`, `AGENTS.md`, and agent/RAG paths are included even in delta scans.
+4. **Synthesizer** produces a score (0–100) and executive summary.
+5. **SSE stream** — `GET /api/scans/:id/stream` pushes logs and findings to the dashboard.
+
+---
+
+## Scripts
 
 ```bash
-pnpm install
-cp artifacts/api-server/.env.example artifacts/api-server/.env
-cp artifacts/threat-legion/.env.example artifacts/threat-legion/.env
-createdb threat_legion
-DATABASE_URL=postgres://localhost/threat_legion pnpm --filter @workspace/db run push
-pnpm dev
+pnpm dev                              # API + frontend
+pnpm run typecheck                    # Type-check all packages
+pnpm run build                        # Production build
+pnpm threat-legion scan --profile ai-app   # CLI scan
+pnpm --filter @workspace/api-spec run codegen   # Regenerate API client from OpenAPI
+pnpm --filter @workspace/db run push  # Push database schema
 ```
 
 ---
 
-## How to Use
+## API
 
-
-
-1. **Open the dashboard** and go to AI Settings.
-2. **Choose your AI provider** (Anthropic, OpenAI, DeepSeek, Groq, or Gemini) and enter your API key.
-3. **Upload project to scan it** (regular folders and zips accepted of codebases).
-4. **Start the scan.** The five agents will begin analyzing the folder in parallel.
-5. **Watch findings stream in** as each agent reports vulnerabilities.
-![Scan](scan.png)
-6. **Review the full report** — each finding includes severity, affected file, line numbers, a code snippet, and remediation steps.
-
----
-
-## How the Scanner Works
-
-### Agent Architecture
-
-When a scan starts, a **coordinator agent** fetches the folder's file tree and categorizes each file by security domain. Files are then dispatched to five specialized agents that run in parallel:
-
-| Agent | Focuses On |
-|---|---|
-| **Auth** | Authentication, sessions, JWT, OAuth, access control |
-| **Injection** | SQL injection, template injection, path traversal, command injection |
-| **Secrets** | Hardcoded API keys, tokens, credentials in config and `.env` files |
-| **Dependencies** | Outdated or vulnerable packages (`package.json`, `requirements.txt`, etc.) |
-| **General** | Business logic, error handling, insecure patterns |
-
-Each agent uses **forced tool calling** — the LLM must call a `report_finding` tool for every vulnerability it identifies, producing structured output with:
-
-```json
-{
-  "severity": "high",
-  "title": "SQL Injection in user query",
-  "description": "...",
-  "remediation": "...",
-  "filePath": "src/db/users.ts",
-  "codeSnippet": "..."
-}
-```
-
-### Real-Time Streaming
-
-Findings are published via Server-Sent Events (SSE) as they are discovered — not batched at the end. The frontend subscribes to `GET /api/scans/:id/stream` and renders each finding immediately.
-
-### AI Provider Abstraction
-
-The `ai-provider.ts` module normalizes tools and messages into a provider-agnostic format, then converts to either the Anthropic or OpenAI API format at call time. This means any supported provider can run the same five-agent architecture without changes to the scan engine.
-
----
-
-## Available Scripts
-
-```bash
-# Start both backend and frontend (recommended)
-pnpm dev
-
-# Type-check all packages
-pnpm run typecheck
-
-# Build all packages for production
-pnpm run build
-
-# Push database schema
-pnpm --filter @workspace/db run push
-
-# Regenerate API client & Zod schemas from OpenAPI spec
-pnpm --filter @workspace/api-spec run codegen
-
-# Run only the backend
-pnpm --filter @workspace/api-server run dev
-
-# Run only the frontend
-pnpm --filter @workspace/threat-legion run dev
-```
-
----
-
-## API Overview
-
-The full API is defined in [`lib/api-spec/openapi.yaml`](lib/api-spec/openapi.yaml). Key endpoints:
+Defined in [`lib/api-spec/openapi.yaml`](lib/api-spec/openapi.yaml). Key routes:
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/health` | Health check |
 | `GET` | `/api/auth/me` | Current user |
-| `POST` | `/api/auth/byok` | Save AI provider settings |
-| `GET` | `/api/scans` | List all scans |
-| `POST` | `/api/scans` | Start a new scan |
-| `GET` | `/api/scans/:id` | Get scan + findings |
-| `GET` | `/api/scans/:id/stream` | SSE stream for live findings |
-| `DELETE` | `/api/scans/:id` | Delete a scan |
+| `POST` | `/api/auth/ai-settings` | Save BYOK settings |
+| `GET` | `/api/scans` | List scans |
+| `POST` | `/api/scans` | Upload project and start scan |
+| `GET` | `/api/scans/:id` | Scan + findings |
+| `GET` | `/api/scans/:id/stream` | Live SSE stream |
 
-React Query hooks and Zod schemas for all endpoints are auto-generated by Orval from the OpenAPI spec into `lib/api-client-react/` and `lib/api-zod/`.
-
----
-
-## Database Schema
-
-| Table | Description |
-|---|---|
-| `users` | User accounts — tier, encrypted AI API key, provider preference |
-| `scans` | Scan records — repo URL, status, risk score, finding counts |
-| `findings` | Individual vulnerabilities — severity, title, file path, line numbers |
-| `sessions` | PostgreSQL-backed session store |
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make your changes and run `pnpm run typecheck`
-4. Commit: `git commit -m "feat: your feature description"`
-5. Push and open a pull request
+The frontend uses generated fetch functions and small React hooks in `lib/api-client-react/` (no TanStack Query).
 
 ---
 

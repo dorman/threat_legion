@@ -24,7 +24,7 @@ export default defineConfig({
     output: {
       workspace: apiClientReactSrc,
       target: "generated",
-      client: "react-query",
+      client: "fetch",
       mode: "split",
       baseUrl: "/api",
       clean: true,

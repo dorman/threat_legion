@@ -24,7 +24,7 @@ artifacts-monorepo/
 │   └── api-server/         # Express API server
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
+│   ├── api-client-react/   # Generated fetch client + React hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
 │   └── db/                 # Drizzle ORM schema + DB connection
 ├── scripts/                # Utility scripts (single workspace package)
@@ -77,7 +77,7 @@ React + Vite frontend for Threat Legion. Dark cybersecurity aesthetic with green
 
 - Pages: Home (landing), Pricing (tier comparison), Dashboard (scan list + new scan), ScanProgress (live SSE stream), ScanResults
 - Auth: redirects to `/api/auth/login` for Replit OIDC login
-- Uses React Query hooks from `@workspace/api-client-react` (generated from OpenAPI spec)
+- Uses fetch functions and lightweight React hooks from `@workspace/api-client-react` (generated from OpenAPI spec)
 - Pricing tiers: Free (low/medium findings) and Pro ($10/mo, all severity levels including high/critical)
 
 ### `lib/db` (`@workspace/db`)
@@ -96,8 +96,9 @@ Production migrations are handled by Replit when publishing. In development, we 
 
 Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
 
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
+1. `lib/api-client-react/src/generated/` — fetch client functions
+2. `lib/api-client-react/src/hooks.ts` — small React hooks wrapping fetch calls
+3. `lib/api-zod/src/generated/` — Zod schemas
 
 Run codegen: `pnpm --filter @workspace/api-spec run codegen`
 
@@ -107,7 +108,7 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 ### `lib/api-client-react` (`@workspace/api-client-react`)
 
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
+Generated fetch client from the OpenAPI spec (e.g. `healthCheck`, `getMe`) plus hand-written React hooks in `src/hooks.ts` (e.g. `useGetMe`, `useListScans`).
 
 ### `scripts` (`@workspace/scripts`)
 

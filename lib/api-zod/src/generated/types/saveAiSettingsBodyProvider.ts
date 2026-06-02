@@ -14,6 +14,4 @@ export const SaveAiSettingsBodyProvider = {
   openai: "openai",
   deepseek: "deepseek",
   groq: "groq",
-  minimax: "minimax",
-  gemini: "gemini",
 } as const;

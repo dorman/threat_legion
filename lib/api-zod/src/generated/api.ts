@@ -47,7 +47,7 @@ export const LogoutResponse = zod.object({
  * @summary Save the user's AI provider and API key
  */
 export const SaveAiSettingsBody = zod.object({
-  provider: zod.enum(["anthropic", "openai", "deepseek", "groq", "minimax", "gemini"]),
+  provider: zod.enum(["anthropic", "openai", "deepseek", "groq"]),
   apiKey: zod.string(),
   model: zod.string().nullish(),
 });

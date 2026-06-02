@@ -3,7 +3,7 @@ import { useRoute, useLocation, Link } from "wouter";
 import { Loader2, Terminal, ShieldAlert, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { useScanStream } from "@/hooks/use-scan-stream";
-import { useGetScan, getGetScanQueryKey } from "@workspace/api-client-react";
+import { useGetScan } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 export default function ScanProgress() {
   const [, params] = useRoute("/scans/:id/progress");
@@ -11,9 +11,7 @@ export default function ScanProgress() {
   const [, setLocation] = useLocation();
   const terminalRef = useRef<HTMLDivElement>(null);
   
-  const { data: scan } = useGetScan(scanId ?? 0, {
-    query: { queryKey: getGetScanQueryKey(scanId ?? 0), enabled: !!scanId, retry: false }
-  });
+  const { data: scan } = useGetScan(scanId ?? 0, { enabled: !!scanId });
 
   const { logs, findings, status, result, error } = useScanStream(scanId);
 

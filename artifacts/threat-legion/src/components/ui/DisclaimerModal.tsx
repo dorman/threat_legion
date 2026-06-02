@@ -2,8 +2,6 @@ import { useState } from "react";
 import { AlertTriangle, Shield, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAcceptDisclaimer } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { getGetMeQueryKey } from "@workspace/api-client-react";
 
 interface DisclaimerModalProps {
   onAccepted: () => void;
@@ -11,14 +9,9 @@ interface DisclaimerModalProps {
 
 export function DisclaimerModal({ onAccepted }: DisclaimerModalProps) {
   const [agreed, setAgreed] = useState(false);
-  const queryClient = useQueryClient();
-
   const { mutate: acceptDisclaimer, isPending } = useAcceptDisclaimer({
-    mutation: {
-      onSuccess: (updatedUser) => {
-        queryClient.setQueryData(getGetMeQueryKey(), updatedUser);
-        onAccepted();
-      },
+    onSuccess: () => {
+      onAccepted();
     },
   });
 

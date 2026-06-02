@@ -6,13 +6,10 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import {
   useGetMe,
-  getGetMeQueryKey,
   useGetSubscription,
-  getGetSubscriptionQueryKey,
   useUpgradeTier,
   useDowngradeTier,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 const FREE_FEATURES = [
@@ -38,30 +35,22 @@ const PRO_FEATURES = [
 ];
 
 export default function Pricing() {
-  const { data: user } = useGetMe({
-    query: { queryKey: getGetMeQueryKey(), retry: false },
+  const { data: user, refetch: refetchUser } = useGetMe();
+  const { data: subscription, refetch: refetchSubscription } = useGetSubscription({
+    enabled: !!user,
   });
-  const { data: subscription } = useGetSubscription({
-    query: { queryKey: getGetSubscriptionQueryKey(), retry: false, enabled: !!user },
-  });
-
-  const queryClient = useQueryClient();
 
   const { mutate: upgrade, isPending: isUpgrading } = useUpgradeTier({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetSubscriptionQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-      },
+    onSuccess: () => {
+      void refetchSubscription();
+      void refetchUser();
     },
   });
 
   const { mutate: downgrade, isPending: isDowngrading } = useDowngradeTier({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetSubscriptionQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-      },
+    onSuccess: () => {
+      void refetchSubscription();
+      void refetchUser();
     },
   });
 
