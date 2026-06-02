@@ -55,7 +55,7 @@ export function PromoVideo() {
               transition={{ delay: 0.6 }}
               className="text-3xl md:text-5xl font-bold text-white mb-4 text-center font-display"
             >
-              Code ships with <span className="text-red-500">hidden threats</span>
+              AI-assisted code ships with <span className="text-red-500">new risks</span>
             </motion.h2>
             <motion.p 
               initial={{ y: 20, opacity: 0 }}
@@ -63,7 +63,7 @@ export function PromoVideo() {
               transition={{ delay: 0.8 }}
               className="text-muted-foreground text-lg font-mono"
             >
-              Vulnerabilities slip through code reviews.
+              Prompt injection and over-powered tools slip through reviews.
             </motion.p>
             
             {/* Floating bug particles */}
@@ -124,7 +124,7 @@ export function PromoVideo() {
               transition={{ delay: 0.4 }}
               className="text-3xl md:text-5xl font-bold text-white mb-4 text-center font-display"
             >
-              <span className="text-[#00ff6a] text-glow">Multi-Agent</span> Scanning
+              <span className="text-[#00ff6a] text-glow">AI-App</span> Specialists
             </motion.h2>
             <motion.p 
               initial={{ y: 20, opacity: 0 }}
@@ -132,7 +132,7 @@ export function PromoVideo() {
               transition={{ delay: 0.6 }}
               className="text-muted-foreground text-lg font-mono"
             >
-              Autonomous AI reads and understands your repository.
+              RAG, agents, prompts, and Cursor configs — reviewed in parallel.
             </motion.p>
           </motion.div>
         )}
@@ -161,7 +161,7 @@ export function PromoVideo() {
               transition={{ delay: 0.4 }}
               className="text-3xl md:text-5xl font-bold text-white mb-4 text-center font-display"
             >
-              Real-time <span className="text-[#00ff6a]">Remediation</span>
+              Actionable <span className="text-[#00ff6a]">Remediation</span>
             </motion.h2>
             
             <motion.div 
@@ -172,11 +172,11 @@ export function PromoVideo() {
             >
               <div className="bg-card/50 backdrop-blur-sm border border-white/10 p-4 rounded-lg font-mono text-sm flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span>Critical SQLi Found</span>
+                <span>Prompt injection in chat route</span>
               </div>
               <div className="bg-card/50 backdrop-blur-sm border border-[#00ff6a]/30 p-4 rounded-lg font-mono text-sm flex items-center gap-3 text-[#00ff6a]">
                 <Code size={16} />
-                <span>Patch Generated</span>
+                <span>Fix steps included</span>
               </div>
             </motion.div>
           </motion.div>

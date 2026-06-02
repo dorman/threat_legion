@@ -33,19 +33,19 @@ export function DisclaimerModal({ onAccepted }: DisclaimerModalProps) {
               <AlertTriangle className="w-6 h-6 text-yellow-400" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-1">Security Scanner Disclaimer</h2>
-              <p className="text-muted-foreground text-sm">Please read carefully before using Threat Legion</p>
+              <h2 className="text-2xl font-bold mb-1">AI-App Security Disclaimer</h2>
+              <p className="text-muted-foreground text-sm">Please read before scanning Cursor, agent, or RAG projects</p>
             </div>
           </div>
 
           <div className="space-y-4 text-sm text-muted-foreground mb-8 max-h-72 overflow-y-auto pr-2">
             <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 text-yellow-200/80">
               <strong className="text-yellow-400 block mb-1">No Security Guarantee</strong>
-              Threat Legion is an AI-assisted scanning tool and <strong className="text-foreground">does not guarantee detection of all vulnerabilities</strong>. The scanner may miss existing security flaws, including zero-day vulnerabilities, logic errors, business-logic exploits, or any issue not captured during the scan session.
+              Threat Legion scans for AI-app risks (prompt injection, RAG leaks, agent tools) using your chosen LLM provider. It <strong className="text-foreground">does not guarantee detection of all issues</strong> — including classic appsec bugs, logic flaws, or novel agent abuse patterns.
             </div>
 
             <p>
-              <strong className="text-foreground">Scan results reflect a point-in-time snapshot</strong> of your repository. The absence of findings in a report does not mean your codebase is secure. New vulnerabilities may be introduced after a scan, and existing vulnerabilities may exist that were not detected.
+              <strong className="text-foreground">Scan results reflect a point-in-time snapshot</strong> of your uploaded project. A clean report does not mean your LLM routes, retrieval layer, or agent tools are safe.
             </p>
 
             <p>
@@ -57,7 +57,7 @@ export function DisclaimerModal({ onAccepted }: DisclaimerModalProps) {
             </p>
 
             <p>
-              <strong className="text-foreground">You are responsible for your own security.</strong> It is your responsibility as the repository owner to maintain secure software practices, conduct regular reviews, and act on scan findings promptly. A clean scan report does not constitute a warranty or certification of security.
+              <strong className="text-foreground">You are responsible for your own security.</strong> It is your responsibility as the project owner to maintain secure LLM routes, retrieval layers, and agent tools, conduct regular reviews, and act on scan findings promptly. A clean scan report does not constitute a warranty or certification of security.
             </p>
 
             <div className="bg-white/5 border border-white/10 rounded-lg p-3">
@@ -65,7 +65,7 @@ export function DisclaimerModal({ onAccepted }: DisclaimerModalProps) {
                 <Shield className="w-4 h-4 text-primary" />
                 <span className="text-foreground font-medium text-xs">What this tool does</span>
               </div>
-              <p className="text-xs">Analyzes repository source code using AI to identify common vulnerability patterns. Results are provided for informational purposes only and are not a substitute for a complete security assessment.</p>
+              <p className="text-xs">Analyzes uploaded source with the AI-app profile: prompt surfaces, RAG pipelines, agent/MCP configs, and related auth/secrets. Results are informational — not a certification.</p>
             </div>
           </div>
 

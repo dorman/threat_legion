@@ -8,32 +8,32 @@ const VALUES = [
   {
     icon: <Eye className="w-6 h-6 text-primary" />,
     title: "Transparency first",
-    desc: "We tell you exactly how the scanner works, what AI provider processes your code, and what it cannot do. No black boxes.",
+    desc: "We explain which specialist reviews each file, which provider runs the scan, and what AI-app risks we do not cover.",
   },
   {
     icon: <Lock className="w-6 h-6 text-primary" />,
-    title: "Privacy by design",
-    desc: "Only public repositories are scanned. Private source code is never sent to any external AI service — ever.",
+    title: "Your key, your provider",
+    desc: "Bring your own API key. Code is analyzed via the provider you choose — we store keys encrypted and never return them to the browser.",
   },
   {
     icon: <Shield className="w-6 h-6 text-primary" />,
     title: "Honest about limitations",
-    desc: "AI scanning is a powerful first pass, not a guarantee. We always remind you to complement our results with manual review.",
+    desc: "AI-app scanning is a strong first pass for prompt injection and agent tools — not a guarantee. Always review findings manually.",
   },
   {
     icon: <Zap className="w-6 h-6 text-primary" />,
-    title: "Speed without compromise",
-    desc: "Real-time streaming means you see findings the moment they're discovered — no waiting for a batch report.",
+    title: "Built for PR velocity",
+    desc: "Delta scans and CI integration mean you can check AI-assisted diffs without scanning entire monorepos every time.",
   },
   {
     icon: <Code className="w-6 h-6 text-primary" />,
     title: "Actionable results",
-    desc: "Every finding comes with a severity rating, the exact file and line, and a concrete remediation step — not just a warning.",
+    desc: "Findings include severity, file location, and remediation tuned to LLM apps — not generic OWASP boilerplate.",
   },
   {
     icon: <Users className="w-6 h-6 text-primary" />,
-    title: "Built for developers",
-    desc: "Security tooling that fits into your workflow, not the other way around. Paste a URL, get answers.",
+    title: "Built for Cursor-era devs",
+    desc: "Upload a project, wire the CLI into CI, or use the dashboard — security that fits how you actually ship with AI.",
   },
 ];
 
@@ -60,13 +60,13 @@ export default function About() {
                 <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">About ThreatLegion</span>
               </div>
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-                Security tooling that actually <span className="text-primary">tells you the truth</span>
+                Security for software built with <span className="text-primary">AI</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                ThreatLegion is an autonomous, AI-powered vulnerability scanner built to give developers
-                clear, actionable insight into the security posture of their public GitHub repositories.
-                We built it because most security tools either overwhelm you with noise or hide behind
-                vague scores. We do neither.
+                Threat Legion helps developers who ship with Cursor, coding agents, and RAG catch
+                prompt injection, retrieval leaks, and over-powered tools — before they merge.
+                We built it because generic scanners do not understand AI-assisted failure modes,
+                and prompting Claude yourself does not give you CI guardrails or specialist routing.
               </p>
             </motion.div>
           </div>
@@ -84,25 +84,20 @@ export default function About() {
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Our mission</h2>
               <div className="space-y-4 text-muted-foreground leading-relaxed">
                 <p>
-                  Most security vulnerabilities aren't exotic — they're the same classes of bugs
-                  (SQL injection, hardcoded credentials, insecure dependencies) found again and again
-                  in production code. The problem isn't that developers don't care; it's that the
-                  tooling to catch these issues is either too slow, too expensive, or requires a
-                  dedicated security team to interpret.
+                  When code is AI-generated or orchestrates models, new risks appear: user messages
+                  merged into system prompts, vector queries without tenant filters, MCP tools that
+                  can read secrets or run shell commands, and API keys pasted into Cursor rules.
                 </p>
                 <p>
-                  ThreatLegion changes that. A coordinator AI reads your file tree and routes every
-                  file to one of five specialist agents — each focused on a specific threat class:
-                  authentication flaws, injection vulnerabilities, hardcoded secrets, dependency risks,
-                  and general security issues. The specialists run in parallel, reporting findings as
-                  they're discovered. A synthesizer agent then produces a calibrated score and
-                  executive summary across all results.
+                  Threat Legion&apos;s default <strong className="text-foreground">ai-app profile</strong> routes
+                  files to seven specialists — auth on LLM routes, prompt & tool injection, RAG retrieval,
+                  agent/MCP configs, secrets in AI configs, dependencies, and general AI-app hygiene.
+                  They run in parallel and stream findings as they go.
                 </p>
                 <p>
-                  We scan only <strong className="text-foreground">public repositories</strong> by
-                  design. Code is analysed by Claude AI (Anthropic), which does not train on API data
-                  by default. We believe good security tooling should never require you to compromise
-                  your own privacy to use it.
+                  Use the <strong className="text-foreground">CLI on pull requests</strong> for delta scans,
+                  or upload a project in the dashboard for a full local audit. You bring your own
+                  provider key — we orchestrate the specialists, not markup on inference.
                 </p>
               </div>
             </motion.div>
@@ -152,28 +147,28 @@ export default function About() {
                 {[
                   {
                     step: "01",
-                    title: "Authenticate & submit",
-                    desc: "Sign in with Replit, paste any public GitHub repository URL, and ThreatLegion verifies authorisation before touching a single file.",
+                    title: "Add your provider key",
+                    desc: "Save your Anthropic, OpenAI, or other API key in Settings (dashboard) or THREAT_LEGION_API_KEY (CLI).",
                   },
                   {
                     step: "02",
-                    title: "Coordinator agent classifies the codebase",
-                    desc: "A dedicated coordinator AI reads the full file tree and assigns every file to exactly one specialist domain: authentication, injection, secrets, dependencies, or general security.",
+                    title: "Upload or diff your project",
+                    desc: "Dashboard: upload a folder/ZIP with your app, .cursor rules, and RAG code. CLI: scan git-changed files on each PR.",
                   },
                   {
                     step: "03",
-                    title: "Five specialist agents scan in parallel",
-                    desc: "Each specialist runs its own independent agentic loop — reading files, searching for patterns, and reasoning within its domain. Up to three agents run simultaneously, so large repos finish faster.",
+                    title: "Coordinator routes AI surfaces",
+                    desc: "Files are classified into auth, injection, RAG, agent tools, dependencies, and general — tuned for LLM apps.",
                   },
                   {
                     step: "04",
-                    title: "Findings stream in real time",
-                    desc: "As each agent discovers a vulnerability it reports it immediately via live streaming — you see results from all agents as they happen, not after everything finishes.",
+                    title: "Specialists stream findings",
+                    desc: "Each specialist runs an agentic review and reports prompt injection, retrieval leaks, dangerous tools, and secrets live.",
                   },
                   {
                     step: "05",
-                    title: "Synthesizer produces the final report",
-                    desc: "A final synthesizer agent reviews all findings across all specialists, calibrates the security score, and writes an executive summary highlighting the most critical priorities.",
+                    title: "Review the AI-app report",
+                    desc: "Get a score, executive summary, and remediation steps focused on Cursor, agents, and RAG — not generic noise.",
                   },
                 ].map((item, i) => (
                   <div key={i} className="flex gap-5">

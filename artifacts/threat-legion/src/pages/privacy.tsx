@@ -43,35 +43,34 @@ export default function Privacy() {
           </div>
 
           <p className="text-muted-foreground mb-10 leading-relaxed">
-            This Privacy Policy describes how ThreatLegion ("we", "us", or "our") collects, uses, and protects information when you use our security scanning service.
+            This Privacy Policy describes how ThreatLegion ("we", "us", or "our") collects, uses, and protects information when you use our AI-app security scanning service.
           </p>
 
           <Section title="1. Information We Collect">
             <p><strong className="text-foreground">Account Information:</strong> When you sign in via Replit, we receive your Replit profile information including your name, email address, and profile image. We store this to create and manage your account.</p>
-            <p><strong className="text-foreground">GitHub Identity:</strong> We connect to your GitHub account via Replit's GitHub integration to verify repository ownership. We access your GitHub username to authorize scan requests.</p>
-            <p><strong className="text-foreground">Scan Submissions:</strong> We record the GitHub repository URLs you submit for scanning, along with the resulting vulnerability reports, timestamps, and security scores.</p>
+            <p><strong className="text-foreground">Scan submissions:</strong> We record project names from uploads, scan findings, timestamps, and security scores. Uploaded file content is processed temporarily for the scan.</p>
             <p><strong className="text-foreground">Usage Data:</strong> We collect basic service usage data including scan history and account activity for operational purposes.</p>
           </Section>
 
           <Section title="2. How We Use Your Information">
             <ul className="list-disc list-inside space-y-2 pl-2">
-              <li>To provide and operate the security scanning service.</li>
-              <li>To verify that you have authorization to scan submitted repositories.</li>
-              <li>To generate and store your vulnerability scan reports.</li>
+              <li>To provide and operate the AI-app security scanning service.</li>
+              <li>To process uploaded projects and CLI scan requests you initiate.</li>
+              <li>To generate and store your AI-app security scan reports.</li>
               <li>To manage your subscription tier and billing status.</li>
               <li>To maintain the security and integrity of the service.</li>
               <li>To communicate service updates or important notices.</li>
             </ul>
           </Section>
 
-          <Section title="3. Repository Content">
-            <p><strong className="text-foreground">Temporary Access:</strong> When you submit a repository for scanning, our AI agents temporarily read the repository's source files to generate the vulnerability report. This access is read-only and scoped to the specific scan session.</p>
-            <p><strong className="text-foreground">No Persistent Storage of Code:</strong> We do not permanently store the content of your source code files. File content is accessed in-memory during the scan and discarded once the report is generated.</p>
-            <p><strong className="text-foreground">AI Processing:</strong> Repository content is processed by Claude AI (Anthropic). Anthropic's privacy practices govern how they handle data sent to their API. We encourage you to review Anthropic's privacy policy.</p>
+          <Section title="3. Uploaded project content">
+            <p><strong className="text-foreground">Temporary processing:</strong> When you upload a project, specialist agents read source files to generate the report. Uploads are held in temporary server storage for the scan session.</p>
+            <p><strong className="text-foreground">No long-term source archive:</strong> We do not permanently store full uploaded codebases. Findings and metadata are retained; raw file content is cleaned up after the scan.</p>
+            <p><strong className="text-foreground">AI processing:</strong> Content is sent to your configured LLM provider for analysis. Review that provider&apos;s privacy and data policies before scanning sensitive projects.</p>
           </Section>
 
           <Section title="4. Data Retention">
-            <p><strong className="text-foreground">Scan Reports:</strong> Completed scan results (vulnerability findings, scores, remediation advice) are retained in our database and associated with your account so you can review them later.</p>
+            <p><strong className="text-foreground">Scan Reports:</strong> Completed scan results (findings, scores, remediation advice) are retained in our database and associated with your account so you can review them later.</p>
             <p><strong className="text-foreground">Account Data:</strong> We retain your account information for as long as your account is active. You may request deletion of your account and associated data by contacting us.</p>
             <p><strong className="text-foreground">Session Data:</strong> Session tokens expire after a period of inactivity for security purposes.</p>
           </Section>
@@ -79,8 +78,7 @@ export default function Privacy() {
           <Section title="5. Data Sharing">
             <p>We do not sell your personal data. We share data only in the following limited circumstances:</p>
             <ul className="list-disc list-inside space-y-2 pl-2">
-              <li><strong className="text-foreground">Anthropic (Claude AI):</strong> Repository content is sent to Anthropic's API for AI analysis during scans.</li>
-              <li><strong className="text-foreground">GitHub:</strong> We read repository metadata via the GitHub API to verify ownership.</li>
+              <li><strong className="text-foreground">Your LLM provider:</strong> Project content is sent to the AI provider you configure (Anthropic, OpenAI, etc.) for analysis during scans.</li>
               <li><strong className="text-foreground">Replit:</strong> Authentication is handled via Replit's OIDC service.</li>
               <li><strong className="text-foreground">Legal requirements:</strong> We may disclose information if required by law or valid legal process.</li>
             </ul>

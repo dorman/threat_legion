@@ -7,33 +7,33 @@ import { Footer } from "@/components/layout/Footer";
 const practices = [
   {
     icon: <Lock className="w-5 h-5 text-primary" />,
-    title: "Encrypted Connections",
-    desc: "All data in transit is encrypted using TLS. Your code and scan results are never transmitted over unencrypted channels.",
+    title: "Encrypted connections",
+    desc: "All data in transit uses TLS. Uploaded projects and scan results are not sent over unencrypted channels.",
   },
   {
     icon: <Eye className="w-5 h-5 text-primary" />,
-    title: "Read-Only Code Access",
-    desc: "ThreatLegion only reads your repository code — it never writes, modifies, or commits to your repositories.",
+    title: "Read-only analysis",
+    desc: "Threat Legion analyzes uploaded source for the scan session — it does not modify your files or repository.",
   },
   {
     icon: <Shield className="w-5 h-5 text-primary" />,
-    title: "Ownership Verification",
-    desc: "Every scan is gated behind GitHub ownership verification. You can only scan repositories you own or collaborate on.",
+    title: "Bring your own key",
+    desc: "Inference runs through your configured provider. API keys are encrypted at rest and never returned to the browser.",
   },
   {
     icon: <CheckCircle2 className="w-5 h-5 text-primary" />,
-    title: "Session Security",
+    title: "Session security",
     desc: "Authentication sessions are server-side, cryptographically signed, and expire after inactivity.",
   },
   {
-    icon: <Zap className="w-5 h-5 text-primary" />,
-    title: "Ephemeral Code Processing",
-    desc: "Repository source files are read in-memory during the scan session and are never written to persistent storage.",
+    icon: <Zap className="w-5 h-5 text-yellow-500" />,
+    title: "Ephemeral uploads",
+    desc: "Uploaded source files are stored temporarily for the scan, then cleaned up from server temp storage.",
   },
   {
     icon: <AlertTriangle className="w-5 h-5 text-yellow-500" />,
-    title: "AI Model Transparency",
-    desc: "Scans are powered by Claude AI (Anthropic). Code snippets are sent to Anthropic's API for analysis under their data handling policies.",
+    title: "Provider transparency",
+    desc: "Scans use your chosen LLM provider (Anthropic, OpenAI, etc.). Review their data handling policies before scanning sensitive code.",
   },
 ];
 
@@ -102,7 +102,9 @@ export default function Security() {
             <div>
               <h3 className="font-semibold text-yellow-300 mb-2">Scanner Limitation Disclosure</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                ThreatLegion is an <strong className="text-foreground">informational tool</strong>, not a security guarantee. AI-based scanning cannot detect all vulnerability types, including zero-days, logic-layer exploits, or infrastructure misconfigurations. Always combine automated scanning with manual code review, dependency audits, and professional penetration testing for a complete security posture.
+                Threat Legion is an <strong className="text-foreground">informational AI-app scanner</strong>, not a certification.
+                It focuses on prompt injection, RAG leaks, and agent tools — but cannot detect every issue.
+                Combine scans with manual review and professional testing for production systems.
               </p>
             </div>
           </div>

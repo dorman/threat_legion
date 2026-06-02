@@ -67,7 +67,7 @@ export default function ScanResults() {
               <ArrowLeft className="w-4 h-4 mr-1" /> Back to Dashboard
             </Link>
             <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
-              Security Report
+              AI-App Security Report
             </h1>
             <div className="flex items-center gap-2 mt-2 text-muted-foreground">
               <Folder className="w-4 h-4" />
@@ -130,10 +130,10 @@ export default function ScanResults() {
               </div>
               
               <p className="text-sm text-muted-foreground">
-                {score >= 90 ? "Excellent security posture. Keep it up!" :
-                 score >= 70 ? "Good posture, but some issues need attention." :
-                 score >= 50 ? "Significant vulnerabilities detected." :
-                 "Critical security flaws require immediate action."}
+                {score >= 90 ? "Strong AI-app security posture." :
+                 score >= 70 ? "Some AI-surface issues need attention." :
+                 score >= 50 ? "Significant prompt, RAG, or agent-tool risks detected." :
+                 "Critical AI-app security issues need immediate action."}
               </p>
             </div>
             
@@ -188,7 +188,7 @@ export default function ScanResults() {
           {/* Right Column: Findings List */}
           <div className="lg:col-span-2 space-y-6">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-              Identified Vulnerabilities
+              Security Findings
               <span className="text-sm font-normal text-muted-foreground bg-secondary px-3 py-1 rounded-full ml-2">
                 {sortedFindings.length} Total
               </span>
@@ -205,7 +205,7 @@ export default function ScanResults() {
                       {scan.criticalCount + scan.highCount} finding{scan.criticalCount + scan.highCount !== 1 ? "s" : ""} locked
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Upgrade to Pro to view high & critical vulnerability details
+                      Upgrade to Pro to view high & critical finding details
                     </p>
                   </div>
                 </div>
@@ -223,9 +223,10 @@ export default function ScanResults() {
                 <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-4">
                   <ShieldCheck className="w-8 h-8 text-green-500" />
                 </div>
-                <h3 className="text-xl font-medium mb-2">No Vulnerabilities Found</h3>
+                <h3 className="text-xl font-medium mb-2">No issues found</h3>
                 <p className="text-muted-foreground max-w-sm">
-                  The agent did not detect any security issues in this repository during its analysis.
+                  No prompt injection, RAG leak, or agent-tool issues were reported in this scan.
+                  That does not guarantee the app is secure — re-scan after major changes.
                 </p>
               </div>
             ) : (

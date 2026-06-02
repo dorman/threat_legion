@@ -16,7 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 const FREE_FEATURES = [
-  { text: "Unlimited repository scans", included: true },
+  { text: "Unlimited AI-app project scans", included: true },
   { text: "Low severity findings", included: true },
   { text: "Medium severity findings", included: true },
   { text: "Security score & summary", included: true },
@@ -27,7 +27,7 @@ const FREE_FEATURES = [
 ];
 
 const PRO_FEATURES = [
-  { text: "Unlimited repository scans", included: true },
+  { text: "Unlimited AI-app project scans", included: true },
   { text: "Low severity findings", included: true },
   { text: "Medium severity findings", included: true },
   { text: "Security score & summary", included: true },
@@ -92,7 +92,7 @@ export default function Pricing() {
             Simple, Transparent <span className="text-primary text-glow">Pricing</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start scanning for free. Upgrade to unlock the full picture of your security posture.
+            Scan Cursor, agent, and RAG projects for free. Upgrade to unlock high & critical finding details.
           </p>
         </motion.div>
 
@@ -123,7 +123,7 @@ export default function Pricing() {
                 <span className="text-muted-foreground">/month</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Scan repositories and view low & medium severity findings.
+                Scan AI-app projects and view low & medium severity findings.
               </p>
             </div>
 
@@ -242,7 +242,7 @@ export default function Pricing() {
         >
           <div className="inline-flex items-center gap-2 p-4 rounded-xl bg-card/50 border border-white/5 text-sm text-muted-foreground">
             <Lock className="w-4 h-4" />
-            Free tier users can see that high & critical vulnerabilities exist, but details are locked until you upgrade.
+            Free tier users can see that high & critical findings exist, but details are locked until you upgrade.
           </div>
         </motion.div>
       </main>

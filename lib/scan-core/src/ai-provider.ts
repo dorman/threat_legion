@@ -39,11 +39,6 @@ function getModel(config: LLMConfig): string {
   return config.model ?? DEFAULT_MODELS[config.provider];
 }
 
-// ============================================================
-// RETRY WITH EXPONENTIAL BACKOFF
-// Retries on 429 rate-limit errors up to maxRetries times
-// ============================================================
-
 async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 4,
@@ -64,7 +59,6 @@ async function withRetry<T>(
       await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
     }
   }
-  // unreachable, but satisfies TypeScript
   throw new Error("withRetry exhausted");
 }
 
@@ -86,11 +80,6 @@ function toOpenAITool(t: NormTool): OpenAI.Chat.Completions.ChatCompletionTool {
     },
   };
 }
-
-// ============================================================
-// FORCED TOOL CALL
-// Forces the model to call a specific tool and returns its input
-// ============================================================
 
 export async function callForcedTool<T>(
   config: LLMConfig,
@@ -120,7 +109,6 @@ export async function callForcedTool<T>(
     return null;
   }
 
-  // OpenAI-compatible
   const client = new OpenAI({
     apiKey: config.apiKey,
     baseURL: OPENAI_BASE_URLS[config.provider],
@@ -143,11 +131,6 @@ export async function callForcedTool<T>(
   }
   return null;
 }
-
-// ============================================================
-// AGENTIC LOOP
-// Runs a multi-turn tool-use loop until the agent signals done
-// ============================================================
 
 export async function runAgentLoop(
   config: LLMConfig,
@@ -290,4 +273,13 @@ async function runOpenAIAgentLoop(
 
     if (done) break;
   }
+}
+
+export function parseProvider(value: string): AIProvider {
+  const normalized = value.toLowerCase() as AIProvider;
+  const allowed: AIProvider[] = ["anthropic", "openai", "deepseek", "groq", "minimax", "gemini"];
+  if (!allowed.includes(normalized)) {
+    throw new Error(`Unsupported provider "${value}". Use: ${allowed.join(", ")}`);
+  }
+  return normalized;
 }

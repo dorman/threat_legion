@@ -51,7 +51,7 @@ export default function Terms() {
           </Section>
 
           <Section title="2. Description of Service">
-            <p>ThreatLegion is an AI-powered security scanning tool that analyzes GitHub repositories for potential security vulnerabilities. The Service uses large language models (Claude AI by Anthropic) to review source code and generate vulnerability reports.</p>
+            <p>Threat Legion is an AI-app security scanning tool. It analyzes uploaded projects (and CLI scans) for risks common in Cursor, agent, and RAG codebases — prompt injection, retrieval leaks, over-powered tools, and related issues. Results are informational only.</p>
             <p>The Service is provided for informational purposes only. Scan results are not a guarantee of security and should not be relied upon as a complete security assessment.</p>
           </Section>
 
@@ -66,9 +66,9 @@ export default function Terms() {
             </ul>
           </Section>
 
-          <Section title="4. Authorized Repository Access">
-            <p>You may only scan repositories for which you have explicit authorization — specifically, repositories you own or where you have been granted collaborator access. Scanning repositories you do not have authorization to access may violate applicable laws, including the Computer Fraud and Abuse Act (CFAA) and similar legislation.</p>
-            <p>By submitting a repository URL, you represent and warrant that you have the right to authorize a security scan of that repository. ThreatLegion verifies ownership via your connected GitHub account.</p>
+          <Section title="4. Authorized project access">
+            <p>You may only scan projects you own or are explicitly authorized to analyze — including code you upload, folders from your machine, or repositories you control in CI.</p>
+            <p>By uploading a project or running a scan, you represent that you have the right to analyze that code. Do not scan third-party code without permission.</p>
           </Section>
 
           <Section title="5. User Accounts">
@@ -78,7 +78,7 @@ export default function Terms() {
           <Section title="6. Acceptable Use">
             <p>You agree not to use the Service to:</p>
             <ul className="list-disc list-inside space-y-2 pl-2">
-              <li>Scan repositories you do not have authorization to access.</li>
+              <li>Scan projects or codebases you do not have authorization to access.</li>
               <li>Attempt to reverse engineer, decompile, or extract the underlying AI models or systems.</li>
               <li>Use the Service for any illegal, harmful, or abusive purpose.</li>
               <li>Attempt to circumvent rate limits, access controls, or other protective measures.</li>
@@ -87,8 +87,8 @@ export default function Terms() {
           </Section>
 
           <Section title="7. Intellectual Property">
-            <p>ThreatLegion and its content, features, and functionality are owned by its operators. You retain ownership of your repositories and code. By submitting a repository for scanning, you grant ThreatLegion a limited, temporary license to access and analyze the code solely for the purpose of generating the security report.</p>
-            <p>We do not store the content of your repositories beyond what is necessary to generate your scan report. See our Privacy Policy for details on data retention.</p>
+            <p>ThreatLegion and its content, features, and functionality are owned by its operators. You retain ownership of your code. By uploading a project for scanning, you grant ThreatLegion a limited, temporary license to analyze it solely to generate the security report.</p>
+            <p>We do not permanently store full uploaded codebases. See our Privacy Policy for details on data retention.</p>
           </Section>
 
           <Section title="8. Subscription and Payment">

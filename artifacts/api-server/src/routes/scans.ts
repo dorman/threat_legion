@@ -1,11 +1,11 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, scansTable, findingsTable, usersTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { runScan, type ScanEvent } from "../lib/scan-engine";
+import { runScan } from "../lib/scan-engine";
 import { publishScanEvent, subscribeScan } from "../lib/scan-bus";
 import { SYSTEM_USER_ID, getOrCreateSystemUser } from "./auth";
-import type { LLMConfig } from "../lib/ai-provider";
-import { getScanDir } from "../lib/local-files";
+import { getScanDir } from "@workspace/scan-core";
+import type { LLMConfig, ScanEvent } from "@workspace/scan-core";
 import multer from "multer";
 import AdmZip from "adm-zip";
 import fs from "fs";

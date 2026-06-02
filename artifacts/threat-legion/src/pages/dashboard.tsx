@@ -310,20 +310,31 @@ export default function Dashboard() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Welcome to Threat Legion</DialogTitle>
-            <DialogDescription>Get started in a few steps.</DialogDescription>
+            <DialogDescription>
+              Security for apps built with Cursor, agents, and RAG — here is how the dashboard works.
+            </DialogDescription>
           </DialogHeader>
           <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
-            <li>Open <strong>AI Provider Settings</strong> and enter your API key.</li>
-            <li>Choose your provider — Anthropic, OpenAI, DeepSeek, or Groq.</li>
-            <li>Upload your local project folder or a ZIP of your codebase.</li>
-            <li>Click <strong>Start Autonomous Scan</strong> and watch findings stream in live.</li>
-            <li>Review the full report with severity ratings, code snippets, and fix instructions.</li>
+            <li>Open <strong>AI Provider Settings</strong> and save your API key (Anthropic, OpenAI, etc.).</li>
+            <li>Upload a project folder or ZIP — include <strong>.cursor/</strong>, agent configs, and RAG code if you have them.</li>
+            <li>Click <strong>Run AI-App Scan</strong>. Seven specialists review prompt injection, RAG leaks, agent tools, and more.</li>
+            <li>Watch findings stream live as each specialist reports issues.</li>
+            <li>Review the report for severity, affected files, and remediation steps.</li>
           </ol>
           <Button className="w-full mt-2" onClick={() => setOpen(false)}>Get Started</Button>
         </DialogContent>
       </Dialog>
 
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-2 max-w-2xl">
+            Upload Cursor, agent, or RAG projects for a full local scan. For pull requests, use{" "}
+            <code className="text-xs bg-secondary px-1.5 py-0.5 rounded font-mono">threat-legion scan --ci</code>{" "}
+            in your pipeline.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
           {/* Left Column */}
@@ -335,11 +346,17 @@ export default function Dashboard() {
 
               <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
                 <NinjaHoodIcon className="w-5 h-5 text-primary" />
-                New Security Scan
+                New AI-App Scan
               </h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Upload your local project folder or a ZIP archive for an autonomous multi-agent vulnerability assessment.
+              <p className="text-sm text-muted-foreground mb-4">
+                Upload a project to scan for prompt injection, RAG tenant leaks, over-powered agent tools,
+                and secrets in Cursor rules — tuned for AI-assisted codebases.
               </p>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 mb-6 text-xs text-muted-foreground leading-relaxed">
+                <strong className="text-foreground block mb-1">What we prioritize</strong>
+                LLM routes & auth · system prompts · retrieval/vector code · MCP & tool configs ·
+                <span className="font-mono"> .cursor/</span> · <span className="font-mono">AGENTS.md</span>
+              </div>
 
               {!hasApiKey && (
                 <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3 mb-4">
@@ -417,7 +434,9 @@ export default function Dashboard() {
                           {isDragging ? "Drop ZIP here" : "Drop a ZIP file or select your project"}
                         </p>
                         {!isDragging && (
-                          <p className="text-xs text-muted-foreground mt-1">Supports any language or framework</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Cursor projects, agent apps, RAG pipelines — any stack
+                          </p>
                         )}
                       </div>
                       {!isDragging && (
@@ -454,9 +473,9 @@ export default function Dashboard() {
                   className="w-full h-11 font-semibold"
                 >
                   {isCreating ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uploading & Initializing...</>
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Uploading & starting specialists...</>
                   ) : (
-                    <><Upload className="w-4 h-4 mr-2" /> Start Autonomous Scan</>
+                    <><Upload className="w-4 h-4 mr-2" /> Run AI-App Scan</>
                   )}
                 </Button>
               </form>
@@ -575,10 +594,11 @@ export default function Dashboard() {
             {/* Warning card */}
             <div className="bg-secondary/30 rounded-xl p-5 border border-yellow-500/10">
               <h3 className="font-medium mb-2 flex items-center gap-2 text-yellow-400/80">
-                <Shield className="w-4 h-4" /> Scanner Limitation Notice
+                <Shield className="w-4 h-4" /> Before you trust the results
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Scan results are not a security guarantee. Threat Legion may miss vulnerabilities. Always complement AI scanning with manual review and professional security testing.
+                This scan targets AI-app risks (prompt injection, RAG isolation, agent tools). It is not a full
+                penetration test and may miss issues. Use findings as one input — not a security guarantee.
               </p>
             </div>
           </div>
@@ -600,7 +620,8 @@ export default function Dashboard() {
                 </div>
                 <h3 className="text-xl font-medium mb-2">No scans yet</h3>
                 <p className="text-muted-foreground max-w-sm mb-6">
-                  You haven't run any vulnerability assessments yet. {!hasApiKey ? "Configure your AI provider key in Settings, then " : ""}Upload a project folder or ZIP to start your first scan.
+                  Upload a Cursor, agent, or RAG project to run your first AI-app security scan.
+                  {!hasApiKey ? " Add your provider key in Settings first." : ""}
                 </p>
               </div>
             ) : (

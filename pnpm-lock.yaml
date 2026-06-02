@@ -102,9 +102,12 @@ importers:
       '@workspace/integrations-anthropic-ai':
         specifier: workspace:*
         version: link:../../lib/integrations-anthropic-ai
+      '@workspace/scan-core':
+        specifier: workspace:*
+        version: link:../../lib/scan-core
       adm-zip:
         specifier: ^0.5.16
-        version: 0.5.16
+        version: 0.5.17
       connect-pg-simple:
         specifier: ^10.0.0
         version: 10.0.0
@@ -622,6 +625,19 @@ importers:
       p-retry:
         specifier: ^7.1.1
         version: 7.1.1
+
+  lib/scan-core:
+    dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.78.0
+        version: 0.78.0(zod@4.3.6)
+      openai:
+        specifier: ^6.32.0
+        version: 6.32.0(zod@4.3.6)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.3.5
 
   scripts:
     devDependencies:
@@ -2088,8 +2104,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  adm-zip@0.5.16:
-    resolution: {integrity: sha512-TGw5yVi4saajsSEgz25grObGHEUaDrniwvA2qwSC060KfqGPdglhvPMA2lPIoxs3PQIItj2iag35fONcQqgUaQ==}
+  adm-zip@0.5.17:
+    resolution: {integrity: sha512-+Ut8d9LLqwEvHHJl1+PIHqoyDxFgVN847JTVM3Izi3xHDWPE4UtzzXysMZQs64DMcrJfBeS/uoEP4AD3HQHnQQ==}
     engines: {node: '>=12.0'}
 
   ajv-draft-04@1.0.0:
@@ -5254,7 +5270,7 @@ snapshots:
 
   acorn@8.16.0: {}
 
-  adm-zip@0.5.16: {}
+  adm-zip@0.5.17: {}
 
   ajv-draft-04@1.0.0(ajv@8.18.0):
     optionalDependencies:

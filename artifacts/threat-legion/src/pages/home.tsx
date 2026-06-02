@@ -1,5 +1,5 @@
 import {
-  Shield, Zap, Code, Search, Key, Users, LineChart, Github, ArrowRight, ExternalLink,
+  Shield, Zap, Bot, Terminal, Key, Github, ArrowRight, ExternalLink, Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -11,37 +11,37 @@ const GITHUB_REPO = "https://github.com/dorman/threat_legion";
 
 const FEATURES = [
   {
-    icon: <Search className="w-6 h-6 text-primary" />,
-    title: "Five Specialist Agents",
-    desc: "A coordinator AI routes each file to the right expert: auth, injection, secrets, dependency, and general security agents — each with domain-specific reasoning.",
+    icon: <Brain className="w-6 h-6 text-primary" />,
+    title: "Prompt & tool injection",
+    desc: "Finds user input merged into system prompts, indirect injection via RAG documents, and model output executed as shell, SQL, or code.",
   },
   {
-    icon: <Code className="w-6 h-6 text-primary" />,
-    title: "Actionable Remediation",
-    desc: "Don't just get alerts — receive specific code snippets and step-by-step instructions on how to patch every flaw found.",
+    icon: <Bot className="w-6 h-6 text-primary" />,
+    title: "Agents with too much power",
+    desc: "Flags over-privileged MCP tools, missing human-in-the-loop on destructive actions, and unsafe patterns in .cursor rules and agent configs.",
   },
   {
-    icon: <Zap className="w-6 h-6 text-primary" />,
-    title: "Real-time Parallel Streaming",
-    desc: "Specialists run in parallel and stream findings the moment they're discovered — not after everything finishes. Watch multiple agents work simultaneously.",
+    icon: <Shield className="w-6 h-6 text-primary" />,
+    title: "RAG tenant leaks",
+    desc: "Catches vector queries without user filters, debug endpoints dumping chunks, and sensitive data embedded without redaction.",
   },
 ];
 
 const BYOK_CARDS = [
   {
     icon: <Key className="w-6 h-6 text-primary" />,
-    title: "Any major provider",
-    desc: "Plug in your Anthropic, OpenAI, DeepSeek, Groq, or Gemini API key. Threat Legion adapts the multi-agent protocol to whichever API you prefer.",
+    title: "Bring your own key",
+    desc: "Anthropic, OpenAI, DeepSeek, Groq, or Gemini. Your key stays in CI or your server — no scanner markup.",
   },
   {
-    icon: <Users className="w-6 h-6 text-primary" />,
-    title: "Why not just prompt Claude yourself?",
-    desc: "You could — but you'd need to build the five-agent architecture, file routing, tool schemas, and synthesis pass yourself. Threat Legion is that infrastructure, prebuilt and tuned for security analysis.",
+    icon: <Terminal className="w-6 h-6 text-primary" />,
+    title: "CLI + PR delta scans",
+    desc: "Default profile targets Cursor, agents, and RAG surfaces. Scan changed files on every pull request with threat-legion scan --ci.",
   },
   {
-    icon: <LineChart className="w-6 h-6 text-primary" />,
-    title: "No mark-up, ever",
-    desc: "Because you supply the key, there's no per-scan fee. Run as many scans as your API budget allows — no subscription required.",
+    icon: <Zap className="w-6 h-6 text-primary" />,
+    title: "Catch what Cursor missed",
+    desc: "AI-generated diffs can skip auth, leak retrieval context, or enable dangerous tools. Threat Legion is the specialist layer for that.",
   },
 ];
 
@@ -51,7 +51,6 @@ export default function Home() {
       <Navbar />
 
       <main className="flex-1 relative overflow-hidden">
-        {/* Background */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-background/80 z-10" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/90 to-background z-10" />
@@ -62,7 +61,6 @@ export default function Home() {
           />
         </div>
 
-        {/* Hero */}
         <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24">
           <div className="max-w-3xl mx-auto text-center">
             <motion.div
@@ -71,21 +69,21 @@ export default function Home() {
               transition={{ duration: 0.5 }}
             >
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-8">
-                <Github className="w-4 h-4" />
-                <span>Open Source</span>
+                <Bot className="w-4 h-4" />
+                <span>Cursor · Agents · RAG</span>
               </div>
 
               <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
-                Agentic{" "}
-                <span className="text-primary text-glow">Vulnerability</span>
+                Security for{" "}
+                <span className="text-primary text-glow">AI-built</span>
                 <br />
-                Scanner
+                software
               </h1>
 
               <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
-                A multi-agent AI system that scans your <strong>codebase/files</strong> for
-                security vulnerabilities — with real-time reasoning, severity ranking, and code-level remediation.
-                Bring your own API key. It is a web app built on entirely React/Typescript tech stack which runs locally in the browser
+                Threat Legion finds prompt injection, RAG leaks, and over-powered agent tools —
+                the failures common when you ship with Cursor, coding agents, and retrieval pipelines.
+                Run it on every PR. Bring your own API key.
               </p>
             </motion.div>
 
@@ -101,28 +99,26 @@ export default function Home() {
                 </a>
               </Button>
               <Button asChild size="lg" variant="outline" className="font-semibold h-12 px-8 border-white/10 hover:border-white/20">
-                <a href={GITHUB_REPO} target="_blank" rel="noopener noreferrer">
-                  <Github className="mr-2 w-4 h-4" /> View Source <ExternalLink className="ml-2 w-3.5 h-3.5 opacity-50" />
+                <a href={`${GITHUB_REPO}#quick-start-cli--ci`} target="_blank" rel="noopener noreferrer">
+                  <Terminal className="mr-2 w-4 h-4" /> CLI setup <ExternalLink className="ml-2 w-3.5 h-3.5 opacity-50" />
                 </a>
               </Button>
             </motion.div>
           </div>
         </div>
 
-        {/* Promo Video */}
         <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <div className="max-w-2xl mx-auto">
             <PromoVideo />
           </div>
         </div>
 
-        {/* Features Section */}
         <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pb-24 border-t border-white/5 pt-24">
           <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">How it works</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Built for the vibe-coding era</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              A multi-agent AI system that doesn't just run static rules — it actively reads your
-              code, follows execution paths, and understands context.
+              Seven specialist agents review auth on LLM routes, prompt injection, RAG retrieval,
+              agent tools, secrets in AI configs, and AI stack dependencies — not generic OWASP checkbox scans.
             </p>
           </div>
 
@@ -146,16 +142,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* BYOK Section */}
         <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pb-24 border-t border-white/5 pt-24">
           <div className="text-center mb-14">
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
               <Key className="w-3.5 h-3.5" /> Bring Your Own Key
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Your model, your rules</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Your model, your pipeline</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Use the AI provider you already trust and pay for. Threat Legion works with
-              Anthropic, OpenAI, DeepSeek, Groq, and Gemini — you stay in full control of your data and costs.
+              Use the provider you already pay for. Threat Legion orchestrates the scan —
+              you control cost, data, and where it runs.
             </p>
           </div>
 
@@ -179,14 +174,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Open Source Strip */}
         <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8 pb-24">
           <div className="rounded-2xl border border-white/5 bg-card/30 p-8 text-center max-w-2xl mx-auto">
             <Github className="w-10 h-10 text-primary mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">Free and open source</h3>
+            <h3 className="text-xl font-bold mb-2">Open source</h3>
             <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">
-              Threat Legion is MIT-licensed and fully open source. Read the code, fork it, self-host it,
-              or contribute. Your AI provider key goes directly to the provider — Threat Legion never stores it in plaintext.
+              MIT-licensed CLI, GitHub Action, and optional dashboard. Fork it, self-host it,
+              or wire it into the way you already build with AI.
             </p>
             <a
               href={GITHUB_REPO}
@@ -194,7 +188,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium"
             >
-              <Github className="w-4 h-4" /> View the source on GitHub <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+              <Github className="w-4 h-4" /> View on GitHub <ExternalLink className="w-3.5 h-3.5 opacity-60" />
             </a>
           </div>
         </div>

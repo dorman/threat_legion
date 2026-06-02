@@ -5,8 +5,6 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig(async ({ mode }) => {
-  // loadEnv reads .env files before the config is evaluated — process.env alone
-  // doesn't have them at config time when Vite is the one launching Node.
   const env = loadEnv(mode, path.resolve(import.meta.dirname), "");
 
   const port = Number(env.PORT ?? "3000");
@@ -48,7 +46,6 @@ export default defineConfig(async ({ mode }) => {
       port,
       host: "0.0.0.0",
       allowedHosts: true,
-      // Proxy /api/* to the Express backend when running locally (not on Replit)
       ...(env.REPL_ID === undefined && {
         proxy: {
           "/api": {

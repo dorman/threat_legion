@@ -42,7 +42,7 @@ export default function ScanProgress() {
           <div className="bg-card rounded-xl border border-white/5 p-6 shadow-lg">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-primary" /> 
-              Active Assessment
+              AI-App Scan in Progress
             </h2>
             
             <div className="space-y-4 mb-8">
@@ -56,8 +56,8 @@ export default function ScanProgress() {
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Status</p>
                 <div className="flex items-center gap-3">
-                  {status === 'connecting' && <><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> <span className="text-muted-foreground">Connecting to agent...</span></>}
-                  {status === 'running' && <><Loader2 className="w-4 h-4 animate-spin text-primary" /> <span className="text-primary font-medium">Agent actively analyzing...</span></>}
+                  {status === 'connecting' && <><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> <span className="text-muted-foreground">Connecting to scan stream...</span></>}
+                  {status === 'running' && <><Loader2 className="w-4 h-4 animate-spin text-primary" /> <span className="text-primary font-medium">Specialists analyzing AI surfaces...</span></>}
                   {status === 'completed' && <><CheckCircle2 className="w-4 h-4 text-green-500" /> <span className="text-green-500 font-medium">Analysis Complete</span></>}
                   {status === 'error' && <span className="text-destructive font-medium">Error: {error}</span>}
                 </div>
@@ -66,7 +66,7 @@ export default function ScanProgress() {
 
             <div className="border-t border-white/5 pt-6">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                Real-time Discoveries
+                Live findings
               </h3>
               
               <div className="grid grid-cols-2 gap-4">
@@ -115,7 +115,7 @@ export default function ScanProgress() {
           <div className="bg-white/5 border-b border-white/10 px-4 py-2 flex items-center justify-between select-none">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground text-xs">agent_execution_log.sh</span>
+              <span className="text-muted-foreground text-xs">ai_app_scan.log</span>
             </div>
             <div className="flex gap-1.5">
               <div className="w-3 h-3 rounded-full bg-red-500/50" />
@@ -130,10 +130,10 @@ export default function ScanProgress() {
             className="flex-1 overflow-y-auto p-4 terminal-scrollbar space-y-1.5 text-gray-300"
           >
             <div className="text-primary opacity-80 mb-4">
-              [SYSTEM] Starting Threat Legion Autonomous Agent...<br/>
+              [SYSTEM] Threat Legion AI-app profile<br/>
               [SYSTEM] Project: {scan?.repoName || 'Loading...'}<br/>
-              [SYSTEM] Model: Claude 3.5 Sonnet<br/>
-              [SYSTEM] Status: Initializing sandbox...
+              [SYSTEM] Specialists: auth · injection · rag · agents · secrets · deps<br/>
+              [SYSTEM] Status: Initializing coordinator...
             </div>
             
             {logs.map((log, i) => {
@@ -162,9 +162,9 @@ export default function ScanProgress() {
 
             {status === 'completed' && (
               <div className="mt-6 text-green-400 font-bold">
-                [SYSTEM] Assessment complete.<br/>
+                [SYSTEM] AI-app scan complete.<br/>
                 [SYSTEM] Security Score: {result?.score}/100<br/>
-                [SYSTEM] Generated final report. Ready for review.
+                [SYSTEM] Report ready — review prompt, RAG, and tool findings.
               </div>
             )}
           </div>

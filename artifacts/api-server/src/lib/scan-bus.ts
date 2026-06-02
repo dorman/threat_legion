@@ -1,4 +1,4 @@
-import type { ScanEvent } from "./scan-engine";
+import type { ScanEvent } from "@workspace/scan-core";
 
 type Listener = (event: ScanEvent) => void;
 
